@@ -1,0 +1,19 @@
+Build embedding database:
+
+Example - writes PDB file embeddings and meta data to files with pathname root "dompdb" using CUDA device 0 (default is CPU):
+
+pytorch_foldclass_makedb.py -d cuda:0 -o dbdir/dompdb /data/cath/dompdb/*.pdb
+
+Note that the pathname for the DB files can be included, but the absolute pathnames of the PDB files are stored in the DB, so
+source PDB files needs to be in the same place on cluster nodes.
+
+
+Searching:
+
+Note: Assumes tmalign is in current PATH.
+
+Run search of DB with 4 threads, top-20 closest embeddings evaluated for tmalign alignment. Note that the tmalign step
+ends early if conditions are already met i.e. match with TM-score > 0.5 (default) and target coverage > 0.7 (default)
+
+pytorch_foldclass_dbsearch.py -t 4 -k 20 -n dbdir/dompdb -t 4 target1.pdb target2.pdb target3.pdb > output.txt
+
