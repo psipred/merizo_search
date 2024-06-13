@@ -311,7 +311,8 @@ def run_merizo(input_paths: List[str], device: str = 'cpu', max_iterations: int 
                 start_time = time.time()
                 
                 if merizo_output is None:
-                    merizo_output = os.path.dirname(pdb_path)
+                    merizo_output = os.getcwd()
+                   # merizo_output = os.path.dirname(pdb_path)
 
                 pdb_name = os.path.basename(pdb_path)
                 pdb_bn, _ = os.path.splitext(pdb_name)
