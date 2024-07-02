@@ -31,6 +31,7 @@ def segment(args):
     parser.add_argument("--save_pdb", action="store_true", default=False, help="Include to save the result as a pdb file. All domains will be included unless --conf_filter or --plddt_filter is used.")
     parser.add_argument("--save_domains", action="store_true", default=False, help="Include to save parsed domains as separate pdb files. Also saves the full pdb.")
     parser.add_argument("--save_fasta", action="store_true", default=False, help="Include to save a fasta file of the input pdb.")
+    parser.add_argument("--output_headers", action="store_true", default=False, help="Select whether iutput TSV files have headers or not")
     parser.add_argument("--conf_filter", type=float, default=None, help="(float, [0-1]) If specified, only domains with a pIoU above this threshold will be saved. ")
     parser.add_argument("--plddt_filter", type=float, default=None, help="(float, [0-1]) If specified, only domain with a plDDT above this threshold will be saved. Note: if used on a non-AF structure, this will correspond to crystallographic b-factors.")
     parser.add_argument("--iterate", action="store_true", help=f"If used, domains under a length threshold (see --min_domain_size) will be re-segmented.")
@@ -75,7 +76,7 @@ def segment(args):
     elapsed_time = time.time() - start_time
     logging.info(f'Finished merizo segment in {elapsed_time} seconds.')
     
-    write_segment_results(results=segment_results, output_file=segment_output)
+    write_segment_results(results=segment_results, output_file=segment_output, header=args.output_headers)
 
 # Function to handle createdb mode
 def createdb(args):
@@ -115,6 +116,7 @@ def search(args):
     parser.add_argument('-d', '--device', type=str, default='cpu', required=False)
     parser.add_argument('-f', '--fastmode', action='store_true', required=False)
     parser.add_argument("--format", type=str, default="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd", help="Comma-separated list of variable names to output. Choose from: [query, target, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
+    parser.add_argument("--output_headers", action="store_true", default=False, help="Select whether iutput TSV files have headers or not")
     args = parser.parse_args(args)
     
     logging.info('Starting merizo search with command: \n\n{}\n'.format(
@@ -149,7 +151,7 @@ def search(args):
         inputs_are_ca=False,
     )
     
-    write_search_results(results=search_results, output_file=search_output, format_list=output_fields)
+    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers)
     
     elapsed_time = time.time() - start_time
     logging.info(f'Finished merizo search in {elapsed_time} seconds.')
@@ -177,6 +179,7 @@ def easy_search(args):
     parser.add_argument("--save_pdf", action="store_true", default=False, help="Include to save the domain map as a pdf.")
     parser.add_argument("--save_pdb", action="store_true", default=False, help="Include to save the result as a pdb file. All domains will be included unless --conf_filter or --plddt_filter is used.")
     parser.add_argument("--save_domains", action="store_true", default=False, help="Include to save parsed domains as separate pdb files. Also saves the full pdb.")
+    parser.add_argument("--output_headers", action="store_true", default=False, help="Select whether iutput TSV files have headers or not")
     parser.add_argument("--save_fasta", action="store_true", default=False, help="Include to save a fasta file of the input pdb.")
     parser.add_argument("--conf_filter", type=float, default=None, help="(float, [0-1]) If specified, only domains with a pIoU above this threshold will be saved. ")
     parser.add_argument("--plddt_filter", type=float, default=None, help="(float, [0-1]) If specified, only domain with a plDDT above this threshold will be saved. Note: if used on a non-AF structure, this will correspond to crystallographic b-factors.")
@@ -231,7 +234,7 @@ def easy_search(args):
         merizo_output=args.merizo_output,
     )
     
-    write_segment_results(results=segment_results, output_file=segment_output)
+    write_segment_results(results=segment_results, output_file=segment_output, header=args.output_headers)
 
     search_results = dbsearch(
         inputs=segment_domains,
@@ -247,7 +250,7 @@ def easy_search(args):
         inputs_are_ca=True,
     )
     
-    write_search_results(results=search_results, output_file=search_output, format_list=output_fields)
+    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers)
     
     elapsed_time = time.time() - start_time
     logging.info(f'Finished merizo easy-search in {elapsed_time} seconds.')

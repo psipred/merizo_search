@@ -1,0 +1,2 @@
+filename	nres	nres_dom	nres_ndr	ndom	pIoU	runtime	result
+AF-Q96HM7-F1-model_v4	432	267	165	1	0.6343	3.4784	1-267
