@@ -43,6 +43,7 @@ def segment(args):
     parser.add_argument("--min_fragment_size", type=int, default=10, help="Minimum number of residues in a segment.")
     parser.add_argument("--domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A")
     args = parser.parse_args(args)
     
     logging.info('Starting merizo segment with command: \n\n{}\n'.format(
@@ -71,6 +72,7 @@ def segment(args):
         plddt_filter=args.plddt_filter,
         return_domains_as_list=True,
         merizo_output=args.merizo_output,
+        pdb_chain=args.pdb_chain,
     )
     
     elapsed_time = time.time() - start_time
@@ -117,6 +119,7 @@ def search(args):
     parser.add_argument('-f', '--fastmode', action='store_true', required=False)
     parser.add_argument("--format", type=str, default="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd", help="Comma-separated list of variable names to output. Choose from: [query, target, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Select whether iutput TSV files have headers or not")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A")
     args = parser.parse_args(args)
     
     logging.info('Starting merizo search with command: \n\n{}\n'.format(
@@ -149,6 +152,7 @@ def search(args):
         mintm=args.mintm, 
         mincov=args.mincov,
         inputs_are_ca=False,
+        pdb_chain=args.pdb_chain
     )
     
     write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers)
@@ -192,6 +196,7 @@ def easy_search(args):
     parser.add_argument("--min_fragment_size", type=int, default=10, help="Minimum number of residues in a segment.")
     parser.add_argument("--domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A")
     args = parser.parse_args(args)
     
     logging.info('Starting merizo search with command: \n\n{}\n'.format(
@@ -232,6 +237,8 @@ def easy_search(args):
         plddt_filter=args.plddt_filter,
         return_domains_as_list=True,
         merizo_output=args.merizo_output,
+        # pdb_chain=args.pdb_chain
+        pdb_chain="A"
     )
     
     write_segment_results(results=segment_results, output_file=segment_output, header=args.output_headers)
@@ -248,6 +255,7 @@ def easy_search(args):
         mintm=args.mintm, 
         mincov=args.mincov,
         inputs_are_ca=True,
+        pdb_chain=args.pdb_chain
     )
     
     write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers)

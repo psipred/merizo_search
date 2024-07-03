@@ -36,7 +36,7 @@ def write_pdb(tmp, coords, sequence):
     return filename
 
 
-def read_pdb(pdbfile: str):# -> dict[str, Any]
+def read_pdb(pdbfile: str, pdb_chain: str="A"):# -> dict[str, Any]
     """
     Read the coordinates and sequence of a pdb file into a dict. 
 
@@ -52,14 +52,18 @@ def read_pdb(pdbfile: str):# -> dict[str, Any]
     with open(pdbfile, 'r') as fn:
         coords, seq = [], []
         for line in fn:
-            if line[:4] == 'ATOM' and line[12:16] == ' CA ':
-                pdb_fields = [line[:6], line[6:11], line[12:16], line[17:20], line[21], line[22:26], line[30:38], line[38:46], line[46:54]]
-                coords.append(np.array([float(pdb_fields[6]), float(pdb_fields[7]), float(pdb_fields[8])]))
-                seq.append(three_to_single_aa.get(pdb_fields[3], 'X'))
+            # print(line[20:22].strip(), pdb_chain)
+            if line[20:22].strip() == pdb_chain:
+                if line[:4] == 'ATOM' and line[12:16] == ' CA ':
+                    pdb_fields = [line[:6], line[6:11], line[12:16], line[17:20], line[21], line[22:26], line[30:38], line[38:46], line[46:54]]
+                    coords.append(np.array([float(pdb_fields[6]), float(pdb_fields[7]), float(pdb_fields[8])]))
+                    seq.append(three_to_single_aa.get(pdb_fields[3], 'X'))
 
     coords = np.asarray(coords, dtype=np.float32) #[:2000]
     sequence = ''.join(seq)
-    
+    if len(seq) == 0:
+        print("Chain ID given not present in PDB file")
+        exit(128)   
     return {'coords': coords, 'seq': sequence, 'name': pdbfile}
 
 

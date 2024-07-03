@@ -141,7 +141,7 @@ def read_split_weight_files(directory: str) -> dict:
 
 def segment(pdb_path: str, network: torch.nn.Module, device: str, length_conditional_iterate: bool, iterate: bool, 
             max_iterations: int, shuffle_indices: bool, min_domain_size: int = 50, min_fragment_size: int = 10,
-            domain_ave_size: int = 200, conf_threshold: float = 0.5
+            domain_ave_size: int = 200, conf_threshold: float = 0.5,  pdb_chain: str="A",
     ) -> dict:
     """
     Segment domains in a protein structure.
@@ -158,7 +158,7 @@ def segment(pdb_path: str, network: torch.nn.Module, device: str, length_conditi
     Returns:
         dict: A dictionary containing segmented features.
     """
-    features = generate_features_domain(pdb_path, device)
+    features = generate_features_domain(pdb_path, device, pdb_chain)
     
     if length_conditional_iterate and features['nres'] > 512:
         iterate = True
@@ -266,7 +266,7 @@ def run_merizo(input_paths: List[str], device: str = 'cpu', max_iterations: int 
     length_conditional_iterate: bool = False, iterate: bool = False, shuffle_indices: bool = False, 
     save_pdb: bool = False, save_domains: bool = False, save_fasta: bool = False, save_pdf: bool = False, 
     conf_filter: Optional[any] = None, plddt_filter: Optional[any] = None, min_domain_size: int = 50, min_fragment_size: int = 10,
-    domain_ave_size: int = 200, conf_threshold: float = 0.5, return_domains_as_list: bool=False, merizo_output: str=None,
+    domain_ave_size: int = 200, conf_threshold: float = 0.5, return_domains_as_list: bool=False, merizo_output: str=None, pdb_chain: str="A"
 ) -> None:
     """
     Run the Merizo algorithm on input PDB paths.
@@ -325,7 +325,7 @@ def run_merizo(input_paths: List[str], device: str = 'cpu', max_iterations: int 
                         length_conditional_iterate=length_conditional_iterate, iterate=iterate, 
                         max_iterations=max_iterations, shuffle_indices=shuffle_indices,
                         min_domain_size=min_domain_size, min_fragment_size=min_fragment_size, 
-                        domain_ave_size=domain_ave_size, conf_threshold=conf_threshold,
+                        domain_ave_size=domain_ave_size, conf_threshold=conf_threshold, pdb_chain=pdb_chain
                         )
                     
                     domains = generate_outputs(name_dict=name_dict, features=features, conf_filter=conf_filter, 

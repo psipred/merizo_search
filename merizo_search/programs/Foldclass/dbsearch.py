@@ -53,7 +53,7 @@ def search_query_against_db(query_dict, target_dict, mincov, topk):
     return {'scores': top_scores, 'indices': top_indices}
     
     
-def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: int, mincov: float, mincos: float, mintm: float, fastmode: bool, device: torch.device, inputs_are_ca: bool=False):
+def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: int, mincov: float, mincos: float, mintm: float, fastmode: bool, device: torch.device, inputs_are_ca: bool=False, pdb_chain: str="A"):
     
     with torch.no_grad():
         if inputs_are_ca:
@@ -61,7 +61,7 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
             query_dict = query
         else:
             # Read coords and seq from PDB file
-            query_dict = read_pdb(pdbfile=query)
+            query_dict = read_pdb(pdbfile=query, pdb_chain=pdb_chain)
             
         query_input = torch.from_numpy(query_dict['coords']).unsqueeze(0).to(device)
         query_dict['embedding'] = network(query_input)
@@ -96,7 +96,7 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
         return results
 
 def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device, topk: int, fastmode: bool, 
-                 threads: int, mincos: float, mintm: float, mincov: float, inputs_are_ca: bool=False) -> None:
+                 threads: int, mincos: float, mintm: float, mincov: float, inputs_are_ca: bool=False, pdb_chain: str="A") -> None:
     
     if len(inputs) == 0:
         logging.error("No inputs were provided!")
@@ -126,6 +126,7 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
             fastmode=fastmode, 
             device=device, 
             inputs_are_ca=inputs_are_ca,
+            pdb_chain=pdb_chain
         )
         
         search_results.append(results)
@@ -187,10 +188,11 @@ if __name__=="__main__":
     parser.add_argument('-c', '--mincov', type=float, default=0.7, required=False)
     parser.add_argument('-ca', '--ca_coords', type=list, default=None, help='List of CA coordinates with shape list([[N, 3]]')
     parser.add_argument('-d', '--device', type=str, default='cpu', required=False)
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A")
     args = parser.parse_args()
 
     with open(args.inputs, 'r') as fn:
         inputs = [line.rstrip('\n') for line in fn.readlines()]
 
     device = torch.device(args.device)
-    run_dbsearch(inputs, device, args.topk, args.dbname, args.fastmode, args.threads, args.mincos, args.mintm, args.mincov)
+    run_dbsearch(inputs, device, args.topk, args.dbname, args.fastmode, args.threads, args.mincos, args.mintm, args.mincov, args.pdb_chain)
