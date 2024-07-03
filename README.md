@@ -149,7 +149,8 @@ Merizo `segment` and `easy-search` produces a number of different output files t
 --save_domains  Save the domains as individual PDBs.
 --save_pdb      Save a single PDB with the occupancy column replaced with domain IDs. (Visualise in PyMOL using the `spectrum q` command).
 --save_pdf      Save a PDF output showing the domain map.
---save_fasta    Save the sequence of the input file. 
+--save_fasta    Save the sequence of the input file.
+--pdb_chain     Lets you select which PDB chain will be analysed. If not provided chain A is assumed
 ```
 
 By default, output files will be saved alongside the original input query PDB, but they can be saved into a folder given by `--merizo_output`.

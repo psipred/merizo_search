@@ -237,8 +237,7 @@ def easy_search(args):
         plddt_filter=args.plddt_filter,
         return_domains_as_list=True,
         merizo_output=args.merizo_output,
-        # pdb_chain=args.pdb_chain
-        pdb_chain="A"
+        pdb_chain=args.pdb_chain
     )
     
     write_segment_results(results=segment_results, output_file=segment_output, header=args.output_headers)
