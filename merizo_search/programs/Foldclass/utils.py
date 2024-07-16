@@ -11,7 +11,7 @@ from .constants import single_to_three_aa, three_to_single_aa
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__))
 logger = logging.getLogger(__name__)
 
-def write_pdb(tmp, coords, sequence):
+def write_pdb(tmp, coords, sequence, name=None):
     """
     Write a set of coordinates and sequence to a randomly named PDB file in a tmp dir.
     
@@ -26,11 +26,14 @@ def write_pdb(tmp, coords, sequence):
     """
     assert len(coords) == len(sequence), "Number of coordinates should match number of amino acids"
     
-    filename = os.path.join(tmp, str(uuid.uuid4()) + ".pdb")
+    if name is None:
+        name = str(uuid.uuid4())
+
+    filename = os.path.join(tmp, name + ".pdb")
     
     with open(filename, 'w') as pdb_file:
         for i, (coord, amino_acid) in enumerate(zip(coords, sequence), start=1):
-            pdb_file.write(f"ATOM  {i: >5}  CA  {single_to_three_aa.get(amino_acid): >3} A   1    {coord[0]: >8.3f}{coord[1]: >8.3f}{coord[2]: >8.3f}  1.00  0.00\n")
+            pdb_file.write(f"ATOM  {i: >5}  CA  {single_to_three_aa.get(amino_acid): >3} A{i: >4}    {coord[0]: >8.3f}{coord[1]: >8.3f}{coord[2]: >8.3f}  1.00  0.00\n")
         pdb_file.write("END\n")
         
     return filename
@@ -67,7 +70,7 @@ def read_pdb(pdbfile: str, pdb_chain: str="A"):# -> dict[str, Any]
     return {'coords': coords, 'seq': sequence, 'name': pdbfile}
 
 
-def run_tmalign(structure1_path: str, structure2_path: str, options: str = None) -> str:
+def run_tmalign(structure1_path: str, structure2_path: str, options: str = None, keep_pdbs=False) -> str:
     """
     Run TM-align as a subprocess.
 
@@ -93,12 +96,13 @@ def run_tmalign(structure1_path: str, structure2_path: str, options: str = None)
         logger.error(f"Error running tmalign: {error}")
         return ""
     
-    # Delete structure files
-    try:
-        os.remove(structure1_path)
-        os.remove(structure2_path)
-    except OSError as e:
-        logger.error(f"Error deleting structure files: {e}")
+    if not keep_pdbs:
+        # Delete structure files
+        try:
+            os.remove(structure1_path)
+            os.remove(structure2_path)
+        except OSError as e:
+            logger.error(f"Error deleting structure files: {e}")
 
     return extract_tmalign_values(output)
     

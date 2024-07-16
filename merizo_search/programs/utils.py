@@ -20,16 +20,26 @@ def parse_output_format(format_str: str, expected_str: str):
     return wanted_fields
 
 def check_for_database(db_name):
-    if not os.path.exists(db_name + '.pt'):
-        logging.error(f"Cannot find database file {db_name + '.pt'}")
-        sys.exit(1)
-        
-    if not os.path.exists(db_name + '.index'):
-        logging.error(f"Cannot find database file {db_name + '.index'}")
-        sys.exit(1)
+
+    # for faiss db just check for .json as the rest is checked elsewhere
+    if os.path.exists(db_name + '.json'):
+        return
+    else:
+        if not os.path.exists(db_name + '.pt'):
+            logger.error(f"Cannot find database file {db_name + '.pt'}")
+            sys.exit(1)
+            
+        if not os.path.exists(db_name + '.index'):
+            logger.error(f"Cannot find database file {db_name + '.index'}")
+            sys.exit(1)
 
 def write_search_results(results: list[dict], output_file: str, format_list: str, header: bool):
-        
+
+    # TODO check if it is actually as simple as :
+    # with open(output_file, 'w+') as fn:
+    #     if header:
+    #         fn.write('\t'.join(format_list) + '\n')
+
     with open(output_file, 'w+') as fn:
         if header: 
             head_str=''
@@ -69,7 +79,7 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
                         logger.warning(f"Format option '{option}' is not recognized.")
                         sys.exit(1)
             fn.write(f'{head_str.rstrip()}\n')
-            
+
         for res in results:
             for k, match in res.items():
                 formatted_output = []
@@ -112,6 +122,8 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
 def write_segment_results(results: list[dict], output_file: str, header: bool):
     
     with open(output_file, 'w+') as fn:
+        if header:
+            fn.write('\t'.join(('domain_id', 'domlen', 'nres_dom', 'nres_nondom', 'num_dom', 'conf', 'time', 'dom_str')) + '\n')
         for res in results:
             if header:
                 fn.write('filename\tnres\tnres_dom\tnres_ndr\tndom\tpIoU\truntime\tresult\n')

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-
+import logging
 from itertools import groupby
 from operator import itemgetter
 
@@ -409,7 +409,7 @@ def write_pdb_predictions(
     if save_domains or return_domains_as_list:
         if return_domains_as_list:
             domains = []
-
+            overwriteflag = True
             for i, u in enumerate(dom_ids[dom_ids.nonzero()].unique()):
                 output = False
                 out_dom = outname + "_" + str(i+1).zfill(2)
@@ -425,19 +425,19 @@ def write_pdb_predictions(
                 dom_conf = np.mean(p_ca['conf'])
                 dom_plddt = np.mean(p_ca['b'])
                 
-                if return_domains_as_list:
-                    p_seq = ''.join([resndict[aa] for aa in p_ca['resn']])
-                    
-                    domains.append(
-                        {
-                            'coords': get_xyz(p_ca, gaps=False).T.astype(np.float32), 
-                            'seq': p_seq, 
-                            'name': out_dom,
-                            'dom_str': dom_str,
-                            'dom_conf': dom_conf,
-                            'dom_plddt': dom_plddt,
-                        }
-                    )
+                #if return_domains_as_list: # SMK removed redundant check
+                p_seq = ''.join([resndict[aa] for aa in p_ca['resn']])
+                
+                domains.append(
+                    {
+                        'coords': get_xyz(p_ca, gaps=False).T.astype(np.float32), 
+                        'seq': p_seq, 
+                        'name': out_dom,
+                        'dom_str': dom_str,
+                        'dom_conf': dom_conf,
+                        'dom_plddt': dom_plddt,
+                    }
+                )
                     
                 if save_domains:
                     if conf_filter is not None and plddt_filter is None:
@@ -456,7 +456,13 @@ def write_pdb_predictions(
                         output = True
 
                     if output:
-                        with open(outname + '.domains', 'w+') as fn:
+                        domfname = outname + '.domains'
+                        if overwriteflag and os.path.exists(domfname):
+                            logging.warning(domfname+' exists, will be overwritten!')
+                            os.remove(domfname)
+                            overwriteflag=False
+                            
+                        with open(domfname, 'a') as fn:
                             fn.write("{}\t{:.0f}\t{}\t{:.3f}\t{:.3f}\t{:.0f}\t{}\n".format(
                                 name, i + 1, len(p_ca), dom_conf, dom_plddt, u.item(), dom_str))
 

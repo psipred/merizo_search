@@ -45,6 +45,7 @@ def run_createdb(pdb_files: str, out_db: str, device: str) -> None:
     """
     
     pdb_files = [os.path.join(pdb_files, f) for f in os.listdir(pdb_files) if f.endswith('.pdb')]
+    pdb_files.sort() # os.listdir() returns entries in arbitrary order; this keeps things consistent between runs
     logging.info(f"{len(pdb_files)} PDB files found in model directory. Will generate Foldclass database..")
 
     network = network_setup(device=device)
@@ -91,8 +92,8 @@ def run_createdb(pdb_files: str, out_db: str, device: str) -> None:
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description="Merizo createdb calls the createdb function of Foldclass to embed a directory of pdb files into a Foldclass database.")
     parser.add_argument('input_dir', type=str, help='Directory containing pdb files. Will read all .pdb files in this directory.')
-    parser.add_argument('out_db', type=str, help='Output prefix for the created Foldseek db.')
-    parser.add_argument('-d', '--device', type=str, default='cuda', required=False)
+    parser.add_argument('out_db', type=str, help='Output prefix for the created Foldclass database.')
+    parser.add_argument('-d', '--device', type=str, default='cuda', required=False, help="Decive to use when creating Foldclass embeddings. (default: cuda)")
     args = parser.parse_args()
     
     run_createdb(pdb_files=args.input_dir, out_db=args.out_db, device=args.device)
