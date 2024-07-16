@@ -123,7 +123,7 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
 def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: FoldClassNet, 
                 topk: int, mincov: float, mincos: float, mintm: float, fastmode: bool,
                 device: torch.device, inputs_are_ca: bool=False, 
-                search_batchsize:int=262144, search_type='IP'):
+                search_batchsize:int=262144, search_type='IP', pdb_chain:str='A'):
 
     import mmap
     # from itertools import repeat
@@ -207,7 +207,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
                 query_dicts.append(queries[i])
             else:
             # Read coords and seq from PDB file
-                query_dicts.append(read_pdb(pdbfile=queries[i]))
+                query_dicts.append(read_pdb(pdbfile=queries[i], pdb_chain=pdb_chain))
             
             query_lengths[i] = len(query_dicts[i]['seq'])
             query_input = torch.from_numpy(query_dicts[i]['coords']).unsqueeze(0).to(device)
@@ -302,7 +302,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
         query_fn = write_pdb(tmp, query_dicts[qi]['coords'], query_dicts[qi]['seq'], name=os.path.basename(query_dicts[qi]['name']))
         target_fn = write_pdb(tmp, target_coords, target_seq, name=target_name)
             
-        tm_output = run_tmalign(query_fn, target_fn, options='-fast' if fastmode else None, keep_pdbs=True)
+        tm_output = run_tmalign(query_fn, target_fn, options='-fast' if fastmode else None, keep_pdbs=False)
         max_tm = max(tm_output['qtm'], tm_output['ttm'])
         
         # if tm_output['len_ali'] >= len(target_seq) * mincov and max_tm >= mintm:
@@ -492,6 +492,7 @@ if __name__=="__main__":
     parser.add_argument('-c', '--mincov', type=float, default=0.7, required=False)
     parser.add_argument('-ca', '--ca_coords', type=list, default=None, help='List of CA coordinates with shape list([[N, 3]]')
     parser.add_argument('-d', '--device', type=str, default='cpu', required=False)
+    # FIXME: If we want to support multiple query PDBs, this needs to be a comma-separated list if chain IDs!
     parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A")
     parser.add_argument('--search_batchsize', type=int, default=2097152, required=False)
     parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported')

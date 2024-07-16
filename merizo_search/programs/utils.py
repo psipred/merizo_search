@@ -43,41 +43,40 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
     with open(output_file, 'w+') as fn:
         if header: 
             head_str=''
-            for option in format_list:
-                for option in format_list:
-                    if option == 'query':
-                        head_str+='query\t'
-                    elif option == 'target':
-                        head_str+='target\t'
-                    elif option == 'chopping':
-                        head_str+='dom_str\t'
-                    elif option == 'conf':
-                        head_str+='dom_conf\t'
-                    elif option == 'plddt':
-                        head_str+='dom_plddt\t'
-                    elif option == 'emb_rank':
-                        head_str+='emb_rank\t'
-                    elif option == 'emb_score':
-                        head_str+='emb_score\t'
-                    elif option == 'q_len':
-                        head_str+='q_len\t'
-                    elif option == 't_len':
-                        head_str+='t_len\t'
-                    elif option == 'ali_len':
-                        head_str+='ali_len\t'
-                    elif option == 'seq_id':
-                        head_str+='seq_id\t'
-                    elif option == 'q_tm':
-                        head_str+='q_tm\t'
-                    elif option == 't_tm':
-                        head_str+='t_tm\t'
-                    elif option == 'max_tm':
-                        head_str+='max_t\t'
-                    elif option == 'rmsd':
-                        head_str+='rmsd\t'
-                    else:
-                        logger.warning(f"Format option '{option}' is not recognized.")
-                        sys.exit(1)
+            for option in format_list:    
+                if option == 'query':
+                    head_str+='query\t'
+                elif option == 'target':
+                    head_str+='target\t'
+                elif option == 'chopping':
+                    head_str+='dom_str\t'
+                elif option == 'conf':
+                    head_str+='dom_conf\t'
+                elif option == 'plddt':
+                    head_str+='dom_plddt\t'
+                elif option == 'emb_rank':
+                    head_str+='emb_rank\t'
+                elif option == 'emb_score':
+                    head_str+='emb_score\t'
+                elif option == 'q_len':
+                    head_str+='q_len\t'
+                elif option == 't_len':
+                    head_str+='t_len\t'
+                elif option == 'ali_len':
+                    head_str+='ali_len\t'
+                elif option == 'seq_id':
+                    head_str+='seq_id\t'
+                elif option == 'q_tm':
+                    head_str+='q_tm\t'
+                elif option == 't_tm':
+                    head_str+='t_tm\t'
+                elif option == 'max_tm':
+                    head_str+='max_t\t'
+                elif option == 'rmsd':
+                    head_str+='rmsd\t'
+                else:
+                    logger.warning(f"Format option '{option}' is not recognized.")
+                    sys.exit(1)
             fn.write(f'{head_str.rstrip()}\n')
 
         for res in results:
@@ -123,10 +122,8 @@ def write_segment_results(results: list[dict], output_file: str, header: bool):
     
     with open(output_file, 'w+') as fn:
         if header:
-            fn.write('\t'.join(('domain_id', 'domlen', 'nres_dom', 'nres_nondom', 'num_dom', 'conf', 'time', 'dom_str')) + '\n')
+            fn.write('filename\tnres\tnres_dom\tnres_ndr\tndom\tpIoU\truntime\tresult\n')    
         for res in results:
-            if header:
-                fn.write('filename\tnres\tnres_dom\tnres_ndr\tndom\tpIoU\truntime\tresult\n')
             fn.write("{}\t{}\t{}\t{}\t{}\t{:.4f}\t{:.4f}\t{}\n".format(
                 os.path.basename(res['name']).replace('.pdb', ''),
                 int(res['length']),
