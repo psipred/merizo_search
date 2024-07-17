@@ -197,17 +197,19 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
     logger.info('DB iterator using batchsize of '+str(search_batchsize))
 
     query_dicts=[]
+    pdb_chain = pdb_chain.rstrip(",")
+    pdb_chains = pdb_chain.split(",")
 
     with torch.no_grad():
         query_embeddings = torch.zeros(size=(nq,128), dtype=torch.float32, device=device)
         query_lengths = np.zeros(shape=(nq), dtype='int')
-        for i in range(nq):
+        for idx, i in enumerate(range(nq)):
             if inputs_are_ca:
             # Query is dict of coords and sequence
                 query_dicts.append(queries[i])
             else:
             # Read coords and seq from PDB file
-                query_dicts.append(read_pdb(pdbfile=queries[i], pdb_chain=pdb_chain))
+                query_dicts.append(read_pdb(pdbfile=queries[i], pdb_chain=pdb_chains[idx]))
             
             query_lengths[i] = len(query_dicts[i]['seq'])
             query_input = torch.from_numpy(query_dicts[i]['coords']).unsqueeze(0).to(device)

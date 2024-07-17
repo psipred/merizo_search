@@ -304,9 +304,12 @@ def run_merizo(input_paths: List[str], device: str = 'cpu', max_iterations: int 
             
     segment_results = []
     print_results = []
+    
+    pdb_chain = pdb_chain.rstrip(",")
+    pdb_chains = pdb_chain.split(",")
 
     with torch.no_grad():
-        for pdb_path in input_paths:
+        for idx, pdb_path in enumerate(input_paths):
             if os.path.exists(pdb_path):
                 start_time = time.time()
                 
@@ -325,7 +328,7 @@ def run_merizo(input_paths: List[str], device: str = 'cpu', max_iterations: int 
                         length_conditional_iterate=length_conditional_iterate, iterate=iterate, 
                         max_iterations=max_iterations, shuffle_indices=shuffle_indices,
                         min_domain_size=min_domain_size, min_fragment_size=min_fragment_size, 
-                        domain_ave_size=domain_ave_size, conf_threshold=conf_threshold, pdb_chain=pdb_chain
+                        domain_ave_size=domain_ave_size, conf_threshold=conf_threshold, pdb_chain=pdb_chains[idx]
                         )
                     
                     domains = generate_outputs(name_dict=name_dict, features=features, conf_filter=conf_filter, 
@@ -376,6 +379,7 @@ if __name__ == "__main__":
     parser.add_argument("--min_fragment_size", dest="min_fragment_size", type=int, default=10, help="Minimum number of residues in a segment.")
     parser.add_argument("--domain_ave_size", dest="domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", dest="conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
     args = parser.parse_args()
     
     run_merizo(
@@ -397,4 +401,5 @@ if __name__ == "__main__":
         domain_ave_size=args.domain_ave_size,
         conf_threshold=args.conf_threshold,
         return_domains_as_list=False,
+        pdb_chain=args.pdb_chain,
     )

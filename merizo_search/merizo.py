@@ -45,7 +45,7 @@ def segment(args):
     parser.add_argument("--domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
     # FIXME: If we want to support multiple query PDBs, this needs to be a comma-separated list if chain IDs!
-    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
 
     args = parser.parse_args(args)
     
@@ -125,7 +125,7 @@ def search(args):
     parser.add_argument("--format", type=str, default="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd", help="Comma-separated list of variable names to output. Choose from: [query, target, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Select whether iutput TSV files have headers or not")
     # FIXME: If we want to support multiple query PDBs, this needs to be a comma-separated list if chain IDs!
-    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
     parser.add_argument('--search_batchsize', type=int, default=262144, required=False, help='For searches against Faiss databases, the search batchsize to use. Ignored otherwise.')
     parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported')
     args = parser.parse_args(args)
@@ -210,7 +210,7 @@ def easy_search(args):
     parser.add_argument("--domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
     # FIXME: If we want to support multiple query PDBs, this needs to be a comma-separated list if chain IDs!
-    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
     args = parser.parse_args(args)
     
     logging.info('Starting merizo search with command: \n\n{}\n'.format(
