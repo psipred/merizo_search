@@ -65,7 +65,7 @@ def read_pdb(pdbfile: str, pdb_chain: str="A"):# -> dict[str, Any]
     coords = np.asarray(coords, dtype=np.float32) #[:2000]
     sequence = ''.join(seq)
     if len(seq) == 0:
-        print("Chain ID given not present in PDB file")
+        logger.error("Chain ID given not present in PDB file")
         exit(128)   
     return {'coords': coords, 'seq': sequence, 'name': pdbfile}
 

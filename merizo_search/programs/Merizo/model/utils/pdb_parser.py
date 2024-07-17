@@ -1,7 +1,10 @@
 import numpy as np
+import logging
 from collections import Counter
 
 from .build_info import SPECIAL_AA, EXCLUDE_AA
+
+logger = logging.getLogger(__name__)
 
 def write_pdb(mol, name, comments=None):
     """ Writes a pdb file to disk """
@@ -88,7 +91,7 @@ def open_pdb(file: str, pdb_chain: str="A", ignore_H: bool = False):
                 mol = []
                 break
     if len(molecules[0]) == 0:
-        print("Chain ID given not present in PDB file")
+        logger.error("Chain ID given not present in PDB file")
         exit(128)   
     return molecules
 
