@@ -123,7 +123,7 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
 def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: FoldClassNet, 
                 topk: int, mincov: float, mincos: float, mintm: float, fastmode: bool,
                 device: torch.device, inputs_are_ca: bool=False, 
-                search_batchsize:int=262144, search_type='IP', pdb_chain:str='A'):
+                search_batchsize:int=262144, search_type='IP', pdb_chain:str=None):
 
     import mmap
     # from itertools import repeat
@@ -197,8 +197,11 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
     logger.info('DB iterator using batchsize of '+str(search_batchsize))
 
     query_dicts=[]
-    pdb_chain = pdb_chain.rstrip(",")
-    pdb_chains = pdb_chain.split(",")
+    if pdb_chain:
+        pdb_chain = pdb_chain.rstrip(",")
+        pdb_chains = pdb_chain.split(",")
+    else:
+        pdb_chains = ["A"] * nq
 
     with torch.no_grad():
         query_embeddings = torch.zeros(size=(nq,128), dtype=torch.float32, device=device)
@@ -332,7 +335,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
 
 
 def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device, topk: int, fastmode: bool, 
-                 threads: int, mincos: float, mintm: float, mincov: float, inputs_are_ca: bool=False, search_batchsize:int=262144, search_type='IP', pdb_chain: str="A") -> None:
+                 threads: int, mincos: float, mintm: float, mincov: float, inputs_are_ca: bool=False, search_batchsize:int=262144, search_type='IP', pdb_chain: str=None) -> None:
 
     
     if len(inputs) == 0:
@@ -372,7 +375,13 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
                               search_type=search_type
                             )
     else:
-        for pdb in inputs:
+        if pdb_chain:
+            pdb_chain = pdb_chain.rstrip(",")
+            pdb_chains = pdb_chain.split(",")
+        else:
+            pdb_chains = ["A"] * len(inputs)
+
+        for idx, pdb in enumerate(inputs):
             results = dbsearch(
                 query=pdb, 
                 target_dict=target_db, 
@@ -385,7 +394,7 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
                 fastmode=fastmode, 
                 device=device, 
                 inputs_are_ca=inputs_are_ca,
-                pdb_chain=pdb_chain
+                pdb_chain=pdb_chains[idx]
             )
 
             search_results.append(results)
@@ -495,7 +504,7 @@ if __name__=="__main__":
     parser.add_argument('-ca', '--ca_coords', type=list, default=None, help='List of CA coordinates with shape list([[N, 3]]')
     parser.add_argument('-d', '--device', type=str, default='cpu', required=False)
     # FIXME: If we want to support multiple query PDBs, this needs to be a comma-separated list if chain IDs!
-    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Chain 'A' will be analysed if not provided")
     parser.add_argument('--search_batchsize', type=int, default=2097152, required=False)
     parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported')
     args = parser.parse_args()
