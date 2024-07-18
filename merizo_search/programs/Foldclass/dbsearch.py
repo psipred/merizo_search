@@ -146,7 +146,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
         index = faiss.IndexFlat(d, metric_type)
 
         if device != torch.device('cpu') and faiss.get_num_gpus():
-            logger.info('running on %d GPUs' % faiss.get_num_gpus())
+            logger.info('running on %d GPU(s)' % faiss.get_num_gpus())
             index = faiss.index_cpu_to_all_gpus(index)
 
         # compute ground-truth by blocks, and add to heaps
@@ -226,6 +226,10 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
     # TODO: SMK this strategy does not allow us to easily implement length filtering as we have for the pytorch version.
     # faiss IDSelector objects are applied to the db so can't be specified per query in a batch.
     # This needs some thought; simple (but very slow) solution is to just run each query individually and modify knn_exact_faiss().
+
+    if device==torch.device('mps'):
+        logging.info("Faiss supports CUDA GPUs only, not Apple MPS; falling back to CPU search.")
+        device = torch.device('cpu')
     
     D, I = knn_exact_faiss(query_embeddings.cpu(), dbi, topk, metric_type=mt, device=device)
 
@@ -503,7 +507,6 @@ if __name__=="__main__":
     parser.add_argument('-c', '--mincov', type=float, default=0.7, required=False)
     parser.add_argument('-ca', '--ca_coords', type=list, default=None, help='List of CA coordinates with shape list([[N, 3]]')
     parser.add_argument('-d', '--device', type=str, default='cpu', required=False)
-    # FIXME: If we want to support multiple query PDBs, this needs to be a comma-separated list if chain IDs!
     parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Chain 'A' will be analysed if not provided")
     parser.add_argument('--search_batchsize', type=int, default=2097152, required=False)
     parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported')

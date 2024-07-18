@@ -209,7 +209,6 @@ def easy_search(args):
     parser.add_argument("--min_fragment_size", type=int, default=10, help="Minimum number of residues in a segment.")
     parser.add_argument("--domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
-    # FIXME: If we want to support multiple query PDBs, this needs to be a comma-separated list if chain IDs!
     parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
     args = parser.parse_args(args)
     
