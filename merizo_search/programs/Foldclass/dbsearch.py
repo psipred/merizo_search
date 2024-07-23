@@ -382,6 +382,13 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
         if pdb_chain:
             pdb_chain = pdb_chain.rstrip(",")
             pdb_chains = pdb_chain.split(",")
+
+            if len(inputs) != len(pdb_chains):
+                if len(pdb_chains) == 1:
+                    pdb_chains = pdb_chains * len(inputs)  
+            else:
+                logger.error('Number of specified chain IDs not equal to number of input PDB files.')
+                sys.exit(1)
         else:
             pdb_chains = ["A"] * len(inputs)
 

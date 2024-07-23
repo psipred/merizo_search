@@ -308,6 +308,13 @@ def run_merizo(input_paths: List[str], device: str = 'cpu', max_iterations: int 
     pdb_chain = pdb_chain.rstrip(",")
     pdb_chains = pdb_chain.split(",")
 
+    if len(input_paths) != len(pdb_chains):
+        if len(pdb_chains) == 1:
+            pdb_chains = pdb_chains * len(input_paths)
+        else:
+            logger.error('Number of specified chain IDs not equal to number of input PDB files.')
+            sys.exit(1)
+
     with torch.no_grad():
         for idx, pdb_path in enumerate(input_paths):
             if os.path.exists(pdb_path):
