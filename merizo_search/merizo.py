@@ -73,6 +73,7 @@ def segment(args):
         conf_filter=args.conf_filter, 
         plddt_filter=args.plddt_filter,
         return_domains_as_list=True,
+        conf_threshold=args.conf_threshold,
         merizo_output=args.merizo_output,
         pdb_chain=args.pdb_chain,
     )
@@ -126,6 +127,7 @@ def search(args):
     parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
     parser.add_argument('--search_batchsize', type=int, default=262144, required=False, help='For searches against Faiss databases, the search batchsize to use. Ignored otherwise.')
     parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported')
+    parser.add_argument("--report_insignificant_hits", action="store_true", default=False, help="Output a second results_search file that contains hits with insignificant TM Scores. Less than --mintm")
     args = parser.parse_args(args)
     
     logging.info('Starting merizo search with command: \n\n{}\n'.format(
@@ -136,9 +138,12 @@ def search(args):
     check_for_database(args.db_name)
 
     search_output = args.output + '_search.tsv'
+    all_search_output = args.output + '_search_insignificant.tsv'
     if os.path.exists(search_output):
         logging.warning(f"Search output file '{search_output}' already exists. Results will be overwritten!")
-
+    if os.path.exists(all_search_output):
+        logging.warning(f"Search output file '{all_search_output}' already exists. Results will be overwritten!")
+    
     output_fields = parse_output_format(
         format_str=args.format, 
         expected_str="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd"
@@ -146,7 +151,7 @@ def search(args):
     
     start_time = time.time()
 
-    search_results = dbsearch(
+    search_results, all_search_results = dbsearch(
         inputs=args.input,
         db_name=args.db_name,
         tmp=args.tmp,
@@ -164,7 +169,9 @@ def search(args):
     )
     
     write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers)
-        
+    if args.report_insignificant_hits:
+        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers)    
+    
     elapsed_time = time.time() - start_time
     logging.info(f'Finished merizo search in {elapsed_time} seconds.')
 
@@ -178,6 +185,7 @@ def easy_search(args):
     parser.add_argument("tmp", type=str, help="Temporary directory to write things to.")
     parser.add_argument("--format", type=str, default="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd", help="Comma-separated list of variable names to output. Choose from: [query, target, conf, plddt, chopping, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Select whether output TSV files have headers or not")
+    
     # TODO we could organise these into argument groups, will make help easier to understand
     # Foldclass (search) options
     parser.add_argument("-d", "--device", type=str, default="cpu", help="Hardware to run on. Options: 'cpu', 'cuda', 'mps'.")
@@ -207,6 +215,7 @@ def easy_search(args):
     parser.add_argument("--min_fragment_size", type=int, default=10, help="Minimum number of residues in a segment.")
     parser.add_argument("--domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
+    parser.add_argument("--report_insignificant_hits", action="store_true", default=False, help="Output a second results_search file that contains hits with insignificant TM Scores. Less than --mintm")
     parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
     args = parser.parse_args(args)
     
@@ -222,9 +231,12 @@ def easy_search(args):
         logging.warning(f"Segment output file '{segment_output}' already exists. Results will be overwritten!")
         
     search_output = args.output + '_search.tsv'
+    all_search_output = args.output + '_search_insignificant.tsv'
     if os.path.exists(search_output):
         logging.warning(f"Search output file '{search_output}' already exists. Results will be overwritten!")
-        
+    if os.path.exists(all_search_output):
+        logging.warning(f"Search output file '{all_search_output}' already exists. Results will be overwritten!")
+         
     output_fields = parse_output_format(
         format_str=args.format, 
         expected_str="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd"
@@ -247,13 +259,14 @@ def easy_search(args):
         conf_filter=args.conf_filter, 
         plddt_filter=args.plddt_filter,
         return_domains_as_list=True,
+        conf_threshold=args.conf_threshold,
         merizo_output=args.merizo_output,
         pdb_chain=args.pdb_chain
     )
     
     write_segment_results(results=segment_results, output_file=segment_output, header=args.output_headers)
 
-    search_results = dbsearch(
+    search_results, all_search_results = dbsearch(
         inputs=segment_domains,
         db_name=args.db_name,
         tmp=args.tmp,
@@ -267,11 +280,12 @@ def easy_search(args):
         inputs_are_ca=True,
         pdb_chain=args.pdb_chain,
         search_batchsize=args.search_batchsize,
-        search_type=args.search_metric
+        search_type=args.search_metric,
     )
     
     write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers)
-    
+    if args.report_insignificant_hits:
+        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers)    
     elapsed_time = time.time() - start_time
     logging.info(f'Finished merizo easy-search in {elapsed_time} seconds.')
     

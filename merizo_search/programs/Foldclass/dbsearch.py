@@ -93,6 +93,7 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
             query_dict=query_dict, target_dict=target_dict, mincov=mincov, topk=topk)
 
         results = {}
+        all_results = {}
         for i in range(min(topk, result_dict['scores'].size(0))):
             if result_dict['scores'][i] >= mincos:
                 target_name, target_coords, target_seq = target_dict['index'][result_dict['indices'][i]]
@@ -103,8 +104,22 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
                 tm_output = run_tmalign(query_fn, target_fn, options='-fast' if fastmode else None)
                 max_tm = max(tm_output['qtm'], tm_output['ttm'])
                 
-                if tm_output['len_ali'] >= len(target_seq) * mincov and max_tm >= mintm:
-                    results[i] = {
+                if tm_output['len_ali'] >= len(target_seq) * mincov:
+                    if max_tm >= mintm:
+                        results[i] = {
+                            'query': os.path.basename(query_dict['name']).replace('.pdb',''), 
+                            'target': os.path.basename(target_name).replace('.pdb',''), 
+                            'score': result_dict['scores'][i],
+                            'q_len': len(query_dict['seq']), 
+                            't_len': len(target_seq), 
+                            'tmalign_output': tm_output,
+                            'dom_str': query_dict['dom_str'] if 'dom_str' in query_dict.keys() else None,
+                            'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
+                            'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
+                            'dbindex': result_dict['indices'][i],
+                        }
+                    else:
+                        all_results[i] = {
                         'query': os.path.basename(query_dict['name']).replace('.pdb',''), 
                         'target': os.path.basename(target_name).replace('.pdb',''), 
                         'score': result_dict['scores'][i],
@@ -115,9 +130,8 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
                         'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
                         'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
                         'dbindex': result_dict['indices'][i],
-                    }
-
-        return results
+                        }                         
+        return results, all_results
 
 
 def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: FoldClassNet, 
@@ -298,6 +312,8 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
     # results = [dict()] * n_queries_with_hits 
 
     results = [ dict() for _ in range(n_queries_with_hits) ]
+    all_results = [ dict() for _ in range(n_queries_with_hits) ]
+    
     # structure of 'results': list of dict{0: result_dict1, 1:result_dict2, ...}
     
     results_counts = [0] * n_queries_with_hits
@@ -331,11 +347,24 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
             results_counts[qi] += 1
         else:
             n_tm_exclude +=1
+            all_results[qi][ results_counts[qi] ] = {
+                'query': os.path.basename(query_dicts[qi]['name']).replace('.pdb',''), 
+                'target': os.path.basename(target_name).replace('.pdb',''), 
+                'score': hit_distances[i],
+                'q_len': len(query_dicts[qi]['seq']), 
+                't_len': hit_lengths[i], 
+                'tmalign_output': tm_output,
+                'dom_str': query_dicts[qi]['dom_str'] if 'dom_str' in query_dicts[qi].keys() else None,
+                'dom_conf': query_dicts[qi]['dom_conf'] if 'dom_conf' in query_dicts[qi].keys() else None,
+                'dom_plddt': query_dicts[qi]['dom_plddt'] if 'dom_plddt' in query_dicts[qi].keys() else None,
+                'dbindex': hit_indices[i],
+            }
+
 
     if n_tm_exclude > 0:
         logger.info('Excluded '+str(n_tm_exclude)+' hits (across all query domains) by TM-score threshold(>='+str(mintm)+')')
 
-    return results # NB this is the list of hits for *all* query domains, unlike dbsearch(), which returns results for one query domain.
+    return results, all_results # NB this is the list of hits for *all* query domains, unlike dbsearch(), which returns results for one query domain.
 
 
 def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device, topk: int, fastmode: bool, 
@@ -357,13 +386,13 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
 
     # Search the input against the database
     search_results = []
-
+    all_search_results = []
     # SMK we do things differently when searching against a faiss db
     if target_db['faiss']:
         if search_batchsize < 1:
             logger.error("search_batchsize must be >= 1.")
             sys.exit(1)
-        search_results = dbsearch_faiss(queries=inputs,
+        search_results, all_search_results = dbsearch_faiss(queries=inputs,
                               tmp=tmp, 
                               network=network, 
                               mincov=mincov, 
@@ -393,7 +422,7 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
             pdb_chains = ["A"] * len(inputs)
 
         for idx, pdb in enumerate(inputs):
-            results = dbsearch(
+            results, all_results = dbsearch(
                 query=pdb, 
                 target_dict=target_db, 
                 tmp=tmp, 
@@ -409,7 +438,7 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
             )
 
             search_results.append(results)
-            
+            all_search_results.append(all_results)
             # if tmalign_output:
             #     tmalign_out = extract_tmalign_values(tmalign_output)
             #     print(tmalign_out)
@@ -460,7 +489,7 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
     #                           search_batchsize,
     #                           search_type
     #                           )
-    return search_results
+    return search_results, all_search_results
             
     # with open(log, 'w+') as fn:
     #     for line in processed_list:
