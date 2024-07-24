@@ -1,14 +1,24 @@
 # Merizo-search
 
-Merizo-search is a method that builds on the original Merizo (Lau et al., 2023) by combining state-of-the-art domain segmentation with fast embedding searching. Specifically, Merizo-search makes use of an EGNN-based method called Foldclass, which embeds a structure and its sequence into a fixed size 128-length vector. This vector is then searched against a pre-encoded library of domains, and the top-K matches in terms of cosine similarity, is used for a confirmatory TMalign run to validate the search. 
+Merizo-search is a method that builds on the original Merizo (Lau et al., 2023) by combining state-of-the-art domain segmentation with fast embedding-based searching. Specifically, Merizo-search makes use of an EGNN-based method called Foldclass, which embeds a structure and its sequence into a fixed size 128-length vector. This vector is then searched against a pre-encoded library of domains, and the top-K matches in terms of cosine similarity are used for confirmatory TM-align runs to validate the search. Merizo-search also supports searching larger-then-memory databases of embeddings using the Faiss library.
 
 ## Installation
 
-To be finalised. 
+#### Using conda with GPU support (Recommended):
+
+```
+cd /path/to/merizo_search
+conda create -n merizo_search python=3.9
+conda activate merizo_search
+pip install -r merizo_search/programs/Merizo/requirements.txt
+conda install faiss-gpu
+```
+For the CPU-only version of Faiss, replace the last step with `conda install faiss-cpu`. A GPU provides only minor speedups for searching with Faiss, but is beneficial when segmenting and/or embedding many structures.
+We recommend using conda as there is no official Faiss package on PyPI the time of writing. Unofficial packages are available; use these at your own risk.
 
 ## Usage
 
-Merizo-search supports several functionalities listed below:
+Merizo-search supports the functionalities listed below:
 ```
 segment         Runs standard Merizo segment on a multidomain target.
 search          Runs Foldclass search on a single input PDB against a Foldclass database.
@@ -16,7 +26,7 @@ easy-search     Runs Merizo to segment a query into domains and then searches ag
 createdb        Creates a Foldclass database given a directory of PDB files. 
 ```
 
-### segment
+### `segment`
 
 The `segment` module of Merizo can be used to segment a multidomain protein into domains and can be run using: 
 ```
@@ -46,25 +56,30 @@ AF-Q96HM7-F1-model_v4	432	267	165	1	0.6343	2.3652	1-267
 AF-Q96PD2-F1-model_v4	775	383	392	3	0.4942	4.6883	71-189,190-290,291-453
 ```
 
-### search
+### `search`
 
 The `search` module of Merizo will call Foldclass to search queries (as they are, without segment) against a pre-compiled database (created using `createdb`). This is useful when queries are already domains. 
 
 The `search` module is called using:
 ```
 python merizo.py search <input.pdb> <database_name> <output_prefix> <tmp> <options>
+```
+Again, the `-h` option will print all options that can be given to the program. The `database_name` argument is the prefix of a Foldclass database. A Foldclass database can be created using `createdb`.
 
-# Example:
-python merizo.py search ../examples/AF-Q96HM7-F1-model_v4.pdb ../examples/database/cath_ssg5_pdb_files results tmp
+For default Foldclass databases, database_name should be the basename of the database without `.pt` or `.index`. For example:
+```
+python merizo.py search ../examples/AF-Q96HM7-F1-model_v4.pdb ../examples/database/cath results tmp
+```
+For Faiss databases, use the basename of the `.json` file without extension:
+```
+python merizo.py search ../examples/AF-Q96HM7-F1-model_v4.pdb ../examples/database/ted100 results tmp
 ```
 
-Again, the `-h` option will print all options that can be given to the program. The `database_name` argument should point to a Foldclass database (without the `.pt` an `.index`). A Foldclass database can be created using `merizo createdb`. 
-
-This will print:
+Example output:
 ```
 2024-03-10 19:47:32,580 | INFO | Starting merizo search with command:
 
-merizo_search/merizo.py search examples/AF-Q96HM7-F1-model_v4.pdb examples/database/cath_ssg5_pdb_files results tmp
+merizo_search/merizo.py search examples/AF-Q96HM7-F1-model_v4.pdb examples/database/cath results tmp
 
 2024-03-10 19:47:34,188 | INFO | Finished merizo search in 1.6077051162719727 seconds.
 ```
@@ -77,23 +92,23 @@ AF-Q96HM7-F1-model_v4	0	3.40.50.10540__SSG5__1_1	0.8204	432	304	169	0.1120	0.264
 
 Output fields are configurable using the `--format` flag which allows the section of different fields: `query, target, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd`.
 
-### easy-search
+### `easy-search`
 
 `easy-search` combines `segment` and `search` into a single workflow. A multidomain query is parsed using `segment`, and the resultant domains are searched against a database using `search`. This can be called using:
 ```
 python merizo.py search <input.pdb> <database_name> <output_prefix> <tmp> <options>
 
 # Example:
-python merizo.py easy-search ../examples/AF-Q96HM7-F1-model_v4.pdb ../examples/database/cath_ssg5_pdb_files results tmp --iterate
+python merizo.py easy-search ../examples/AF-Q96HM7-F1-model_v4.pdb ../examples/database/cath results tmp --iterate
 ```
 
-As with `search`, the `-h` option will print all options that can be given to the program. The `database_name` argument should point to a Foldclass database (without the `.pt` an `.index`). A Foldclass database can be created using `merizo createdb`. 
+As with `search`, the `-h` option will print all options that can be given to the program. The `database_name` argument is the prefix of a Foldclass database, as above. A Foldclass database can be created using `createdb`. 
 
 This will print: 
 ```
 2024-03-10 19:59:50,086 | INFO | Starting merizo search with command:
 
-merizo_search/merizo.py easy-search examples/AF-Q96HM7-F1-model_v4.pdb examples/database/cath_ssg5_pdb_files results tmp --iterate
+merizo_search/merizo.py easy-search examples/AF-Q96HM7-F1-model_v4.pdb examples/database/cath results tmp --iterate
 
 2024-03-10 19:59:50,086 | WARNING | Segment output file 'results_segment.tsv' already exists. Results will be overwritten!
 2024-03-10 19:59:50,086 | WARNING | Search output file 'results_search.tsv' already exists. Results will be overwritten!
@@ -114,14 +129,14 @@ AF-Q96HM7-F1-model_v4	432	267	165	1	0.6343	22.7448	1-267
 
 Output fields are configurable using the `--format` flag which allows the section of different fields: `query, target, conf, plddt, chopping, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd`.
 
-### createdb
+### `createdb`
 
-`createdb` can be used to create a Foldclass database given a directory of PDB structures (anything with the extension `.pdb` will be read automatically). This can be run using:
+`createdb` can be used to create a standard Foldclass database given a directory of PDB structures (anything with the extension `.pdb` will be read automatically). This can be run using:
 ```
 python merizo.py createdb <directory_containing_pdbs> <output_database_prefix>
 
 # Example:
-python merizo_search/merizo.py createdb examples/database/cath_ssg5_pdb_files/ examples/database/cath_ssg5_pdb_files
+python merizo_search/merizo.py createdb examples/database/cath_pdb examples/database/cath
 ```
 
 The argument given to `output_database_prefix` will be appended with `.pt` and `.index`, with the two files constituting a Foldclass database. 
@@ -141,6 +156,7 @@ merizo_search/merizo.py createdb examples/database/cath_ssg5_pdb_files/ examples
 2024-03-10 20:02:41,317 | INFO | Saved Foldclass index file to examples/database/cath_ssg5_pdb_files.targets
 2024-03-10 20:02:41,342 | INFO | Finished merizo createdb in 1707.4179711341858 seconds.
 ```
+
 
 ### Outputs
 
