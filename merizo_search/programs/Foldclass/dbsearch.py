@@ -237,7 +237,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
         query_embeddings = F.normalize(query_embeddings)
 
     # search using db iterator
-    # TODO: SMK this strategy does not allow us to easily implement length filtering as we have for the pytorch version.
+    # TODO: SMK this strategy does not allow us to easily implement length/coverage filtering as we have for the pytorch version.
     # faiss IDSelector objects are applied to the db so can't be specified per query in a batch.
     # This needs some thought; simple (but very slow) solution is to just run each query individually and modify knn_exact_faiss().
 
@@ -359,7 +359,6 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
                 'dom_plddt': query_dicts[qi]['dom_plddt'] if 'dom_plddt' in query_dicts[qi].keys() else None,
                 'dbindex': hit_indices[i],
             }
-
 
     if n_tm_exclude > 0:
         logger.info('Excluded '+str(n_tm_exclude)+' hits (across all query domains) by TM-score threshold(>='+str(mintm)+')')
