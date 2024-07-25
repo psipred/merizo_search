@@ -266,6 +266,12 @@ def easy_search(args):
     )
     
     write_segment_results(results=segment_results, output_file=segment_output, header=args.output_headers)
+    # if there are no valid inputs for the next step we should gracefully terminate here.
+    if len(segment_domains) == 0:
+        elapsed_time = time.time() - start_time
+        logging.info(f'easy-search finished after segmentation. Segmentation of this PDB file was not possible')
+        logging.info(f'Finished easy-search in {elapsed_time} seconds.')
+        exit()
 
     search_results, all_search_results = dbsearch(
         inputs=segment_domains,
@@ -283,7 +289,6 @@ def easy_search(args):
         search_batchsize=args.search_batchsize,
         search_type=args.search_metric,
     )
-    
     write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers)
     if args.report_insignificant_hits:
         write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers)    
