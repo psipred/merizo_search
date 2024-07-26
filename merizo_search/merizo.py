@@ -128,6 +128,7 @@ def search(args):
     parser.add_argument('--search_batchsize', type=int, default=262144, required=False, help='For searches against Faiss databases, the search batchsize to use. Ignored otherwise.')
     parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported.')
     parser.add_argument("--report_insignificant_hits", action="store_true", default=False, help="Output a second results_search file that contains hits with TM-align scores less than --mintm threshold.")
+    parser.add_argument("--metadata_json", action="store_true", default=False, help="Output metadata for hits in JSON format.")
 
     args = parser.parse_args(args)
     
@@ -147,7 +148,7 @@ def search(args):
     
     output_fields = parse_output_format(
         format_str=args.format, 
-        expected_str="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd"
+        expected_str="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata"
     )
     
     start_time = time.time()
@@ -169,9 +170,9 @@ def search(args):
         search_type=args.search_metric
     )
     
-    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers)
+    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
     if args.report_insignificant_hits:
-        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers)    
+        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers,metadata_json=args.metadata_json)    
     
     elapsed_time = time.time() - start_time
     logging.info(f'Finished search in {elapsed_time} seconds.')
@@ -184,7 +185,7 @@ def easy_search(args):
     parser.add_argument("db_name", type=str, help="Prefix of Foldclass database to search against.")
     parser.add_argument("output", type=str, help="Output file prefix to write segment and search results to. Results will be called _segment.tsv and _search.tsv.")
     parser.add_argument("tmp", type=str, help="Temporary directory to write things to.")
-    parser.add_argument("--format", type=str, default="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd", help="Comma-separated list of variable names to output. Choose from: [query, target, conf, plddt, chopping, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
+    parser.add_argument("--format", type=str, default="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata", help="Comma-separated list of variable names to output. Choose from: [query, target, conf, plddt, chopping, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Print headers in output TSV files.")
 
     # TODO we could organise these into argument groups, will make help easier to understand
@@ -198,7 +199,8 @@ def easy_search(args):
     parser.add_argument('-f', '--fastmode', action='store_true', required=False, help="Use the fast mode of TM-align to verify hits.")
     parser.add_argument('--search_batchsize', type=int, default=262144, required=False, help='For searches against Faiss databases, the search batchsize to use. Ignored otherwise.')
     parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported')
-    parser.add_argument("--report_insignificant_hits", action="store_true", default=False, help="Output a second results_search file that contains hits with TM-align scores less than --mintm threshold.")
+    parser.add_argument("--report_insignificant_hits", action="store_true", default=False, help="Output a second results_search file that contains hits with TM-align scores less than the --mintm threshold.")
+    parser.add_argument("--metadata_json", action="store_true", default=False, help="Output metadata for hits in JSON format.")
 
     # Merizo options
     parser.add_argument("--merizo_output", type=str, default=os.environ['PWD'], help="Designate where to save the merizo outputs to.")
@@ -218,6 +220,7 @@ def easy_search(args):
     parser.add_argument("--domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
     parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
+    
     args = parser.parse_args(args)
     
     logging.info('Starting easy-search with command: \n\n{}\n'.format(
@@ -240,7 +243,7 @@ def easy_search(args):
          
     output_fields = parse_output_format(
         format_str=args.format, 
-        expected_str="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd"
+        expected_str="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata"
     )
     
     start_time = time.time()
@@ -289,9 +292,9 @@ def easy_search(args):
         search_batchsize=args.search_batchsize,
         search_type=args.search_metric,
     )
-    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers)
+    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
     if args.report_insignificant_hits:
-        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers)    
+        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)    
     elapsed_time = time.time() - start_time
     logging.info(f'Finished easy-search in {elapsed_time} seconds.')
     

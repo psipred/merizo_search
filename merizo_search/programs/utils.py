@@ -1,6 +1,7 @@
 import logging 
 import sys
 import os
+import ast
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +34,26 @@ def check_for_database(db_name):
             logger.error(f"Cannot find database file {db_name + '.index'}")
             sys.exit(1)
 
-def write_search_results(results: list[dict], output_file: str, format_list: str, header: bool):
+def write_search_results(results: list[dict], output_file: str, format_list: str, header: bool, metadata_json:bool=False):
 
     # TODO check if it is actually as simple as :
     # with open(output_file, 'w+') as fn:
     #     if header:
     #         fn.write('\t'.join(format_list) + '\n')
 
+    def gen_metadata_header(results):
+        for res in results:
+            if res:
+                for k, result in res.items():
+                    # Either all entries have metadata or none do
+                    if result['metadata'] == '-':
+                        head_str='metadata'
+                        return head_str
+                    else:
+                        head_str='\t'.join(ast.literal_eval(result['metadata']).keys())
+                        return head_str
+        
+    
     with open(output_file, 'w+') as fn:
         if header: 
             head_str=''
@@ -74,6 +88,8 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
                     head_str+='max_t\t'
                 elif option == 'rmsd':
                     head_str+='rmsd\t'
+                elif option == 'metadata':
+                    head_str+= gen_metadata_header(results)
                 else:
                     logger.warning(f"Format option '{option}' is not recognized.")
                     sys.exit(1)
@@ -113,10 +129,34 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
                         formatted_output.append("{:.4f}".format(max(match['tmalign_output']['qtm'], match['tmalign_output']['ttm'])))
                     elif option == 'rmsd':
                         formatted_output.append("{:.2f}".format(match['tmalign_output']['rmsd']))
+                    elif option == 'metadata':
+                        m = ast.literal_eval(match['metadata'])
+                        m_out = '\t'.join(m.values())
+                        formatted_output.append("{}".format(m_out))
                     else:
                         logger.warning(f"Format option '{option}' is not recognized.")
                         sys.exit(1)  
                 fn.write('\t'.join(formatted_output) + '\n')
+    
+    if metadata_json and len(results) > 0:
+        import json
+        # first check if the db even has metadata to output
+        print(results)
+        md = []
+        for res in results:
+            if res:
+                for k, result in res.items():
+                    if result['metadata'] != '-':
+                        md.append( ast.literal_eval(result['metadata']) )
+
+        jsonf = output_file+'.hit_metadata.json'
+        json.dump(md, open(jsonf, 'w'))
+        logger.info('Metadata for hits written to '+jsonf)
+    else:
+        logger.info('Skipping metadata JSON output.')
+
+                        
+
                 
 def write_segment_results(results: list[dict], output_file: str, header: bool):
     

@@ -173,7 +173,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
             rh.add_result(D, I)
             index.reset()
             i0 += ni
-            logger.info("%d db elements, %.3f s" % (i0, time.time() - t0))
+            logger.info("%d DB elements, %.3f s" % (i0, time.time() - t0))
 
         rh.finalize()
         logger.info("kNN time: %.3f s (%d vectors)" % (time.time() - t0, i0))
@@ -269,7 +269,8 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
     hit_seqs = [] # list of str
     hit_coords = [] # list of np.ndarray
     # hit_lengths = [] # compute below
-    
+    hit_metadata = []
+
     index_names_fname = os.path.join(db_dir, dbinfo['db_names_f'])
     # db_domlengths_fname = os.path.join(db_dir, dbinfo['db_domlengths_f'])
     sifname = os.path.join(db_dir, dbinfo['sif'])
@@ -301,6 +302,21 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
         startend = retrieve_start_end_by_idx(idx=hit_indices, mm=cimm)
         for start, end in startend:
             hit_coords.append(retrieve_bytes(start, end, mm=cdmm, typeconv=coord_conv))
+
+    if 'mif' and 'mdf' in dbinfo.keys():
+        mifname = os.path.join(db_dir, dbinfo['mif'])
+        mdfname = os.path.join(db_dir, dbinfo['mdf'])
+
+        with open(mifname, 'rb') as mif, open(mdfname, 'rb') as mdf:
+            mimm = mmap.mmap(mif.fileno(), 0, access=mmap.ACCESS_READ)
+            mdmm = mmap.mmap(mdf.fileno(), 0, access=mmap.ACCESS_READ)
+
+        startend = retrieve_start_end_by_idx(idx=hit_indices, mm=mimm)
+
+        for start, end in startend:
+            hit_metadata.append(retrieve_bytes(start, end, mm=mdmm, typeconv=lambda x: x.decode('ascii')))
+    else:
+        hit_metadata = ['-'] * n_hits_all_queries
 
     hit_lengths = list(map(len, hit_seqs))
     n_queries_with_hits = np.max(query_indices) + 1
@@ -343,6 +359,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
                 'dom_conf': query_dicts[qi]['dom_conf'] if 'dom_conf' in query_dicts[qi].keys() else None,
                 'dom_plddt': query_dicts[qi]['dom_plddt'] if 'dom_plddt' in query_dicts[qi].keys() else None,
                 'dbindex': hit_indices[i],
+                'metadata': hit_metadata[i],
             }
             results_counts[qi] += 1
         else:
@@ -358,6 +375,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
                 'dom_conf': query_dicts[qi]['dom_conf'] if 'dom_conf' in query_dicts[qi].keys() else None,
                 'dom_plddt': query_dicts[qi]['dom_plddt'] if 'dom_plddt' in query_dicts[qi].keys() else None,
                 'dbindex': hit_indices[i],
+                'metadata': hit_metadata[i],
             }
 
     if n_tm_exclude > 0:
