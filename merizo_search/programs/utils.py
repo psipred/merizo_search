@@ -141,7 +141,6 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
     if metadata_json and len(results) > 0:
         import json
         # first check if the db even has metadata to output
-        print(results)
         md = []
         for res in results:
             if res:
