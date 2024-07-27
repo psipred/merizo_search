@@ -117,6 +117,7 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
                             'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
                             'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
                             'dbindex': result_dict['indices'][i],
+                            'metadata': '-',
                         }
                     else:
                         all_results[i] = {
@@ -130,6 +131,7 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
                         'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
                         'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
                         'dbindex': result_dict['indices'][i],
+                        'metadata': '-',
                         }                         
         return results, all_results
 

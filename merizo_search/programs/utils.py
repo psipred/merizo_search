@@ -46,7 +46,7 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
             if res:
                 for k, result in res.items():
                     # Either all entries have metadata or none do
-                    if result['metadata'] == '-':
+                    if isinstance(result['metadata'], str):
                         head_str='metadata'
                         return head_str
                     else:
@@ -130,9 +130,12 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
                     elif option == 'rmsd':
                         formatted_output.append("{:.2f}".format(match['tmalign_output']['rmsd']))
                     elif option == 'metadata':
-                        m = ast.literal_eval(match['metadata'])
-                        m_out = '\t'.join(m.values())
-                        formatted_output.append("{}".format(m_out))
+                        if isinstance(match['metadata'], dict):
+                            m = ast.literal_eval(match['metadata'])
+                            m_out = '\t'.join(m.values())
+                            formatted_output.append("{}".format(m_out))
+                        else:
+                            formatted_output.append("{}".format(match['metadata']))
                     else:
                         logger.warning(f"Format option '{option}' is not recognized.")
                         sys.exit(1)  
