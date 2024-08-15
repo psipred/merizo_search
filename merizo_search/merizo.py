@@ -230,6 +230,16 @@ def easy_search(args):
     # Check that the database is valid
     check_for_database(args.db_name)
 
+    pdb_chain = args.pdb_chain.rstrip(",")
+    pdb_chains = pdb_chain.split(",")
+
+    if len(args.input) != len(pdb_chains):
+        if len(pdb_chains) == 1:
+            pdb_chains = pdb_chains * len(args.input)
+        else:
+            logging.error('Number of specified chain IDs not equal to number of input PDB files.')
+            sys.exit(1)
+
     segment_output = args.output + '_segment.tsv'
     if os.path.exists(segment_output):
         logging.warning(f"Segment output file '{segment_output}' already exists. Results will be overwritten!")
@@ -276,6 +286,14 @@ def easy_search(args):
         logging.info(f'Finished easy-search in {elapsed_time} seconds.')
         exit()
 
+    pdb_chains_dict = {os.path.basename(k):v for k,v in zip(args.input, pdb_chains) }
+    pdb_chains_for_search = []
+    for res in segment_results:
+        for _ in range(res['num_domains']):
+            pdb_chains_for_search.append(pdb_chains_dict[res['name']])
+
+    pdb_chains_for_search = ','.join(pdb_chains_for_search)
+
     search_results, all_search_results = dbsearch(
         inputs=segment_domains,
         db_name=args.db_name,
@@ -288,7 +306,7 @@ def easy_search(args):
         mintm=args.mintm, 
         mincov=args.mincov,
         inputs_are_ca=True,
-        pdb_chain=args.pdb_chain,
+        pdb_chain=pdb_chains_for_search,
         search_batchsize=args.search_batchsize,
         search_type=args.search_metric,
     )
@@ -296,7 +314,7 @@ def easy_search(args):
     if args.report_insignificant_hits:
         write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)    
     elapsed_time = time.time() - start_time
-    logging.info(f'Finished easy-search in {elapsed_time} seconds.')
+    logging.info(f'Finished easy-search in {elapsed_time:.3f} seconds.')
     
 
 # Main function to parse arguments and call respective functions

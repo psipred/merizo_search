@@ -154,10 +154,8 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
         jsonf = output_file+'.hit_metadata.json'
         json.dump(md, open(jsonf, 'w'))
         logger.info('Metadata for hits written to '+jsonf)
-    else:
-        logger.info('Skipping metadata JSON output.')
-
-                        
+    # else:
+    #     logger.info('Skipping metadata JSON output.')
 
                 
 def write_segment_results(results: list[dict], output_file: str, header: bool):

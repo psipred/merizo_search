@@ -5,6 +5,8 @@ import sys
 import argparse
 import pickle
 import logging
+import re
+import mmap
 
 import numpy as np
 import torch
@@ -54,14 +56,17 @@ def read_database(db_name: str, device: str):
         assert len(target_index) == target_db.size(0)
 
         target_lengths = torch.tensor([len(target[2]) for target in target_index], dtype=torch.float, device=device)
+        mdfn = db_name + '.metadata'
+        mifn = mdfn + '.index'
+        if not os.path.exists(mdfn) or not os.path.exists(mifn):
+            mdfn = mifn = None
 
-        return {'database': target_db, 'index': target_index, 'lengths': target_lengths, 'faiss': False}
+        return {'database': target_db, 'index': target_index, 'lengths': target_lengths, 'faiss': False, 'mdfn': mdfn, 'mifn': mifn}
     elif os.path.exists(db_name + '.json'):
         # faiss db; db reading is done elsewhere
         target_db = db_name+'.json'
-        target_index = None #db_name + '.index_names'
-        target_lengths = None
-        return {'database': target_db, 'index': target_index, 'lengths': target_lengths, 'faiss': True}
+        
+        return {'database': target_db, 'faiss': True}
     else:
         logger.error(db_name,'is not a valid db or the path basename is incorrect; neither', db_name+'.pt', 'nor', db_name+'.json', 'were found.')
         sys.exit(1)
@@ -76,7 +81,10 @@ def search_query_against_db(query_dict, target_dict, mincov, topk):
     return {'scores': top_scores, 'indices': top_indices}
     
     
-def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: int, mincov: float, mincos: float, mintm: float, fastmode: bool, device: torch.device, inputs_are_ca: bool=False, pdb_chain: str="A"):
+def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, 
+             topk: int, mincov: float, mincos: float, mintm: float, 
+             fastmode: bool, device: torch.device, inputs_are_ca: bool=False, 
+             pdb_chain: str="A", skip_tmalign=False):
     
     with torch.no_grad():
         if inputs_are_ca:
@@ -91,6 +99,18 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
         
         result_dict = search_query_against_db(
             query_dict=query_dict, target_dict=target_dict, mincov=mincov, topk=topk)
+        
+        if target_dict['mdfn'] is not None and target_dict['mifn'] is not None:
+            mifname = target_dict['mifn']
+            mdfname = target_dict['mdfn']
+
+            mif = open(mifname, 'rb')
+            mdf = open(mdfname, 'rb')
+            mimm = mmap.mmap(mif.fileno(), 0, access=mmap.ACCESS_READ)
+            mdmm = mmap.mmap(mdf.fileno(), 0, access=mmap.ACCESS_READ)
+        else:
+            mimm = mdmm = None
+            metadata = '{ }'
 
         results = {}
         all_results = {}
@@ -105,6 +125,11 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
                 max_tm = max(tm_output['qtm'], tm_output['ttm'])
                 
                 if tm_output['len_ali'] >= len(target_seq) * mincov:
+                    if mimm is not None:
+                        startend = retrieve_start_end_by_idx(idx=[result_dict['indices'][i]], mm=mimm)
+
+                        for start, end in startend:
+                            metadata = retrieve_bytes(start, end, mm=mdmm, typeconv=lambda x: x.decode('ascii'))
                     if max_tm >= mintm:
                         results[i] = {
                             'query': os.path.basename(query_dict['name']).replace('.pdb',''), 
@@ -117,7 +142,7 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
                             'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
                             'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
                             'dbindex': result_dict['indices'][i],
-                            'metadata': '-',
+                            'metadata': metadata,
                         }
                     else:
                         all_results[i] = {
@@ -131,7 +156,7 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
                         'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
                         'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
                         'dbindex': result_dict['indices'][i],
-                        'metadata': '-',
+                        'metadata': metadata,
                         }                         
         return results, all_results
 
@@ -139,10 +164,10 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet, topk: in
 def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: FoldClassNet, 
                 topk: int, mincov: float, mincos: float, mintm: float, fastmode: bool,
                 device: torch.device, inputs_are_ca: bool=False, 
-                search_batchsize:int=262144, search_type='IP', pdb_chain:str=None):
+                search_batchsize:int=262144, search_type='IP', pdb_chain:str='A', 
+                skip_tmalign=False):
 
-    import mmap
-    # from itertools import repeat
+    
     import faiss
     # from faiss.contrib.exhaustive_search import knn_ground_truth
 
@@ -165,13 +190,14 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
             logger.info('running on %d GPU(s)' % faiss.get_num_gpus())
             index = faiss.index_cpu_to_all_gpus(index)
 
-        # compute ground-truth by blocks, and add to heaps
+        # compute scores by blocks, and add to heaps
         i0 = 0
         for xbi in db_iterator:
             ni = xbi.shape[0]
             index.add(xbi)
             D, I = index.search(xq, k)
             I += i0
+            ## optionally modify D with bonuses here
             rh.add_result(D, I)
             index.reset()
             i0 += ni
@@ -242,6 +268,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
     # TODO: SMK this strategy does not allow us to easily implement length/coverage filtering as we have for the pytorch version.
     # faiss IDSelector objects are applied to the db so can't be specified per query in a batch.
     # This needs some thought; simple (but very slow) solution is to just run each query individually and modify knn_exact_faiss().
+    # Another way is to apply mincov filter in post for both versions, like for mintm and mincos.
 
     if device==torch.device('mps'):
         logging.info("Faiss supports CUDA GPUs only, not Apple MPS; falling back to CPU search.")
@@ -279,7 +306,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
     sdfname = os.path.join(db_dir, dbinfo['sdf'])
     cifname = os.path.join(db_dir, dbinfo['cif'])
     cdfname = os.path.join(db_dir, dbinfo['cdf'])
-
+    logger.info('Retrieve domain hits...')
     with open(index_names_fname, 'rb') as idf:
         idmm = mmap.mmap(idf.fileno(), 0, access=mmap.ACCESS_READ)
         hit_ids = retrieve_names_by_idx(idx=hit_indices, mm=idmm, use_sorting=False)
@@ -318,7 +345,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
         for start, end in startend:
             hit_metadata.append(retrieve_bytes(start, end, mm=mdmm, typeconv=lambda x: x.decode('ascii')))
     else:
-        hit_metadata = ['-'] * n_hits_all_queries
+        hit_metadata = ['{ }'] * n_hits_all_queries
 
     hit_lengths = list(map(len, hit_seqs))
     n_queries_with_hits = np.max(query_indices) + 1
@@ -336,6 +363,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
     
     results_counts = [0] * n_queries_with_hits
 
+    logger.info("TM-align top hits...")
     n_tm_exclude = 0
     for i in range(n_hits_all_queries):
         qi = query_indices[i]
@@ -387,7 +415,8 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
 
 
 def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device, topk: int, fastmode: bool, 
-                 threads: int, mincos: float, mintm: float, mincov: float, inputs_are_ca: bool=False, search_batchsize:int=262144, search_type='IP', pdb_chain: str=None) -> None:
+                 threads: int, mincos: float, mintm: float, mincov: float, inputs_are_ca: bool=False, 
+                 search_batchsize:int=262144, search_type='IP', pdb_chain: str=None) -> None:
 
     
     if len(inputs) == 0:
@@ -433,10 +462,10 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
 
             if len(inputs) != len(pdb_chains):
                 if len(pdb_chains) == 1:
-                    pdb_chains = pdb_chains * len(inputs)  
-            else:
-                logger.error('Number of specified chain IDs not equal to number of input PDB files.')
-                sys.exit(1)
+                    pdb_chains = [pdb_chains] * len(inputs)  
+                else:
+                    logger.error('Number of specified chain IDs not equal to number of input PDB files.')
+                    sys.exit(1)
         else:
             pdb_chains = ["A"] * len(inputs)
 
@@ -458,96 +487,9 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
 
             search_results.append(results)
             all_search_results.append(all_results)
-            # if tmalign_output:
-            #     tmalign_out = extract_tmalign_values(tmalign_output)
-            #     print(tmalign_out)
-            #     exit()
-                
-            #     # if aligned_length is not None:
-            #     # if aligned_length >= len(target_seq) * mincov and max(tm_scores) >= mintm:
-                #     bn_q = os.path.basename(input).replace('.pdb', '')
-                #     bn_t = os.path.basename(target_name).replace('.pdb', '')
-                
-                
-
-            #     line = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.6f}\t{:.4f}".format(
-            #         bn_q, bn_t, aligned_length, rmsd, seq_identity, len(query_dict['seq']),
-            #         len(target_seq), result_dict['scores'][i].item(), max(tm_scores)
-            #     )
-                
-            #     print(line)
-
-            
-            # if result_dict['scores'][i] >= mincos:
-            #     target_name, target_coords, target_seq = target_dict['index'][result_dict['indices'][i]]
-
-                # tmalign_output = run_tmalign(fname_q, fname_t, options=tmopts)
-                # if tmalign_output:
-                #     aligned_length, rmsd, seq_identity, tm_scores, alignment_lines = extract_tmalign_values(tmalign_output)
-                #     if aligned_length is not None:
-                #         if aligned_length >= len(seq_t) * mincov and max(tm_scores) >= mintm:
-                #             bn_q = os.path.basename(fname_q).replace('.pdb', '')
-                #             bn_t = os.path.basename(fname_t).replace('.pdb', '')
-                            
-                #             line = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.6f}\t{:.4f}\n".format(bn_q, bn_t, aligned_length, rmsd, seq_identity, len(seq_q), len(seq_t), top_scores[i].item(), max(tm_scores))
-                #             print(line)
-                                
-            # processed_list.append(fname_q)
         
-    # full_length_search(search_results,
-    #                           target_db,
-    #                           tmp,
-    #                           device,
-    #                           topk,
-    #                           fastmode, 
-    #                           threads,
-    #                           mincos,
-    #                           mintm,
-    #                           mincov,
-    #                           inputs_are_ca,
-    #                           search_batchsize,
-    #                           search_type
-    #                           )
     return search_results, all_search_results
-            
-    # with open(log, 'w+') as fn:
-    #     for line in processed_list:
-    #         fn.write(os.path.basename(line) + '\n')
 
-def full_length_search(search_results,
-                       target_db,
-                       tmp: str,
-                       device: torch.device,
-                       topk: int,
-                       fastmode: bool, 
-                       threads: int,
-                       mincos: float,
-                       mintm: float,
-                       mincov: float,
-                       inputs_are_ca: bool=False,
-                       search_batchsize:int=262144,
-                       search_type='IP',
-                       force_expansion=False
-                       ):
-    # from pprint import pprint # for testing only
-    
-    # extract potential chains for full-length matching
-    all_hit_domains = list()
-
-    # if the same chain id is found for all query domains, then that is a full-length hit. no further work needed.
-    # If there are no such ids (or user forces it), then we need to do extra work.
-
-    for hitdict in search_results:
-        all_hit_domains.extend([ i['target'] for i in hitdict.values() ])
-
-    # pprint(all_hit_domains)
-    
-    # pytorch version
-    # faiss version
-
-    # turn into (pytorch) db for final searching
-    
-    pass
   
 if __name__=="__main__":
     parser = argparse.ArgumentParser()

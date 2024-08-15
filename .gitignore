@@ -9,3 +9,6 @@ __pycache__
 *~
 *metadata.json
 merizo_search/programs/Foldclass/pdb2emb.py
+.vscode/
+merizo_search.code-workspace
+merizo_search/.vscode/
