@@ -315,7 +315,7 @@ def easy_search(args):
         write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)    
     elapsed_time = time.time() - start_time
     logging.info(f'Finished easy-search in {elapsed_time:.3f} seconds.')
-    
+
 
 # Main function to parse arguments and call respective functions
 def main():

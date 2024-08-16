@@ -416,7 +416,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
 
 def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device, topk: int, fastmode: bool, 
                  threads: int, mincos: float, mintm: float, mincov: float, inputs_are_ca: bool=False, 
-                 search_batchsize:int=262144, search_type='IP', pdb_chain: str=None) -> None:
+                 search_batchsize:int=262144, search_type='IP', pdb_chain: str=None, skip_tmalign:bool=False) -> None:
 
     
     if len(inputs) == 0:
@@ -453,7 +453,8 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
                               pdb_chain=pdb_chain,
                               target_dict=target_db,
                               search_batchsize=search_batchsize,
-                              search_type=search_type
+                              search_type=search_type,
+                              skip_tmalign=skip_tmalign
                             )
     else:
         if pdb_chain:
@@ -482,7 +483,8 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
                 fastmode=fastmode, 
                 device=device, 
                 inputs_are_ca=inputs_are_ca,
-                pdb_chain=pdb_chains[idx]
+                pdb_chain=pdb_chains[idx],
+                skip_tmalign=skip_tmalign
             )
 
             search_results.append(results)
@@ -490,7 +492,7 @@ def run_dbsearch(inputs: list[str], db_name: str, tmp: str, device: torch.device
         
     return search_results, all_search_results
 
-  
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--inputs', type=str, required=False, default=None, help='File containing list of PDB paths to run on.')

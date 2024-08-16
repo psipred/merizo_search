@@ -85,7 +85,7 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
                 elif option == 't_tm':
                     head_str+='t_tm\t'
                 elif option == 'max_tm':
-                    head_str+='max_t\t'
+                    head_str+='max_tm\t'
                 elif option == 'rmsd':
                     head_str+='rmsd\t'
                 elif option == 'metadata':
