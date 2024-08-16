@@ -89,7 +89,7 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
                 elif option == 'rmsd':
                     head_str+='rmsd\t'
                 elif option == 'metadata':
-                    head_str+= gen_metadata_header(results)
+                    head_str+= 'metadata' #gen_metadata_header(results)
                 else:
                     logger.warning(f"Format option '{option}' is not recognized.")
                     sys.exit(1)
