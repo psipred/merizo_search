@@ -6,6 +6,7 @@ __pycache__
 *.pdb2
 *.domains
 *.tsv
+*.idx
 *~
 *metadata.json
 merizo_search/programs/Foldclass/pdb2emb.py

@@ -148,7 +148,7 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
         for res in results:
             if res:
                 for k, result in res.items():
-                    if result['metadata'] != '-':
+                    if result['metadata'] != '{ }':
                         md.append( ast.literal_eval(result['metadata']) )
 
         jsonf = output_file+'.hit_metadata.json'

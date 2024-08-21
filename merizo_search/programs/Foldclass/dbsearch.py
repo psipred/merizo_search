@@ -114,24 +114,75 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet,
 
         results = {}
         all_results = {}
-        for i in range(min(topk, result_dict['scores'].size(0))):
-            if result_dict['scores'][i] >= mincos:
+        if skip_tmalign:
+            for i in range(min(topk, result_dict['scores'].size(0))):
+                if mimm is not None:
+                    startend = retrieve_start_end_by_idx(idx=[result_dict['indices'][i]], mm=mimm)
+
+                    for start, end in startend:
+                        metadata = retrieve_bytes(start, end, mm=mdmm, typeconv=lambda x: x.decode('ascii'))
                 target_name, target_coords, target_seq = target_dict['index'][result_dict['indices'][i]]
+                if result_dict['scores'][i] >= mincos:
+                    results[i] = {
+                        'query': os.path.basename(query_dict['name']).replace('.pdb',''), 
+                        'target': os.path.basename(target_name).replace('.pdb',''), 
+                        'score': result_dict['scores'][i],
+                        'q_len': len(query_dict['seq']), 
+                        't_len': len(target_seq), 
+                        'tmalign_output': None,
+                        'dom_str': query_dict['dom_str'] if 'dom_str' in query_dict.keys() else None,
+                        'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
+                        'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
+                        'dbindex': result_dict['indices'][i],
+                        'metadata': metadata,
+                    }
+                else:
+                    all_results[i] = {
+                    'query': os.path.basename(query_dict['name']).replace('.pdb',''), 
+                    'target': os.path.basename(target_name).replace('.pdb',''), 
+                    'score': result_dict['scores'][i],
+                    'q_len': len(query_dict['seq']), 
+                    't_len': len(target_seq), 
+                    'tmalign_output': None,
+                    'dom_str': query_dict['dom_str'] if 'dom_str' in query_dict.keys() else None,
+                    'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
+                    'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
+                    'dbindex': result_dict['indices'][i],
+                    'metadata': metadata,
+                    }                         
+        else: # not skip_tmalign
+            for i in range(min(topk, result_dict['scores'].size(0))):
+                if result_dict['scores'][i] >= mincos:
+                    target_name, target_coords, target_seq = target_dict['index'][result_dict['indices'][i]]
 
-                query_fn = write_pdb(tmp, query_dict['coords'], query_dict['seq'])
-                target_fn = write_pdb(tmp, target_coords, target_seq)
-                
-                tm_output = run_tmalign(query_fn, target_fn, options='-fast' if fastmode else None)
-                max_tm = max(tm_output['qtm'], tm_output['ttm'])
-                
-                if tm_output['len_ali'] >= len(target_seq) * mincov:
-                    if mimm is not None:
-                        startend = retrieve_start_end_by_idx(idx=[result_dict['indices'][i]], mm=mimm)
+                    query_fn = write_pdb(tmp, query_dict['coords'], query_dict['seq'])
+                    target_fn = write_pdb(tmp, target_coords, target_seq)
+                    
+                    tm_output = run_tmalign(query_fn, target_fn, options='-fast' if fastmode else None)
+                    max_tm = max(tm_output['qtm'], tm_output['ttm'])
+                    
+                    if tm_output['len_ali'] >= len(target_seq) * mincov:
+                        if mimm is not None:
+                            startend = retrieve_start_end_by_idx(idx=[result_dict['indices'][i]], mm=mimm)
 
-                        for start, end in startend:
-                            metadata = retrieve_bytes(start, end, mm=mdmm, typeconv=lambda x: x.decode('ascii'))
-                    if max_tm >= mintm:
-                        results[i] = {
+                            for start, end in startend:
+                                metadata = retrieve_bytes(start, end, mm=mdmm, typeconv=lambda x: x.decode('ascii'))
+                        if max_tm >= mintm:
+                            results[i] = {
+                                'query': os.path.basename(query_dict['name']).replace('.pdb',''), 
+                                'target': os.path.basename(target_name).replace('.pdb',''), 
+                                'score': result_dict['scores'][i],
+                                'q_len': len(query_dict['seq']), 
+                                't_len': len(target_seq), 
+                                'tmalign_output': tm_output,
+                                'dom_str': query_dict['dom_str'] if 'dom_str' in query_dict.keys() else None,
+                                'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
+                                'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
+                                'dbindex': result_dict['indices'][i],
+                                'metadata': metadata,
+                            }
+                        else:
+                            all_results[i] = {
                             'query': os.path.basename(query_dict['name']).replace('.pdb',''), 
                             'target': os.path.basename(target_name).replace('.pdb',''), 
                             'score': result_dict['scores'][i],
@@ -143,21 +194,8 @@ def dbsearch(query, target_dict: dict, tmp: str, network: FoldClassNet,
                             'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
                             'dbindex': result_dict['indices'][i],
                             'metadata': metadata,
-                        }
-                    else:
-                        all_results[i] = {
-                        'query': os.path.basename(query_dict['name']).replace('.pdb',''), 
-                        'target': os.path.basename(target_name).replace('.pdb',''), 
-                        'score': result_dict['scores'][i],
-                        'q_len': len(query_dict['seq']), 
-                        't_len': len(target_seq), 
-                        'tmalign_output': tm_output,
-                        'dom_str': query_dict['dom_str'] if 'dom_str' in query_dict.keys() else None,
-                        'dom_conf': query_dict['dom_conf'] if 'dom_conf' in query_dict.keys() else None,
-                        'dom_plddt': query_dict['dom_plddt'] if 'dom_plddt' in query_dict.keys() else None,
-                        'dbindex': result_dict['indices'][i],
-                        'metadata': metadata,
-                        }                         
+                            }         
+        # end if/else skip_tmalign                
         return results, all_results
 
 
@@ -197,7 +235,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
             index.add(xbi)
             D, I = index.search(xq, k)
             I += i0
-            ## optionally modify D with bonuses here
+            ## optionally modify D with corrections here; keep track of which D is for which query chain/domain/hit chain
             rh.add_result(D, I)
             index.reset()
             i0 += ni
@@ -393,8 +431,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
             }
             results_counts[qi] += 1
         else:
-            n_tm_exclude +=1
-            all_results[qi][ results_counts[qi] ] = {
+            all_results[qi][ n_tm_exclude ] = {
                 'query': os.path.basename(query_dicts[qi]['name']).replace('.pdb',''), 
                 'target': os.path.basename(target_name).replace('.pdb',''), 
                 'score': hit_distances[i],
@@ -407,6 +444,7 @@ def dbsearch_faiss(queries: list[dict], target_dict: dict, tmp: str, network: Fo
                 'dbindex': hit_indices[i],
                 'metadata': hit_metadata[i],
             }
+            n_tm_exclude +=1
 
     if n_tm_exclude > 0:
         logger.info('Excluded '+str(n_tm_exclude)+' hits (across all query domains) by TM-score threshold(>='+str(mintm)+')')
