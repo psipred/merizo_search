@@ -10,6 +10,7 @@ sys.path.append(os.path.join(SCRIPTDIR, 'programs'))
 from programs.Merizo.predict import run_merizo as segment_pdb
 from programs.Foldclass.makedb import run_createdb as createdb_from_pdb
 from programs.Foldclass.dbsearch import run_dbsearch as dbsearch
+from programs.Foldclass.dbsearch_fulllength import full_length_search
 from programs.utils import (
     parse_output_format, 
     write_search_results, 
@@ -129,7 +130,7 @@ def search(args):
     parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported.')
     parser.add_argument("--report_insignificant_hits", action="store_true", default=False, help="Output a second results_search file that contains hits with TM-align scores less than --mintm threshold.")
     parser.add_argument("--metadata_json", action="store_true", default=False, help="Output metadata for hits in JSON format.")
-
+    parser.add_argument("--full_length_search", action="store_true", default=False, help="Search DB for entries that match all query domains (all domains are treated as coming from one chain; domain ordering not currently considered while matching).")
     args = parser.parse_args(args)
     
     logging.info('Starting search with command: \n\n{}\n'.format(
@@ -167,12 +168,16 @@ def search(args):
         inputs_are_ca=False,
         pdb_chain=args.pdb_chain,
         search_batchsize=args.search_batchsize,
-        search_type=args.search_metric
+        search_type=args.search_metric,
+        skip_tmalign=args.full_length_search
     )
-    
-    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
-    if args.report_insignificant_hits:
-        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers,metadata_json=args.metadata_json)    
+    if not args.full_length_search:
+        write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
+        if args.report_insignificant_hits:
+            write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers,metadata_json=args.metadata_json)
+    else:
+        # call full-length search routine
+        pass
     
     elapsed_time = time.time() - start_time
     logging.info(f'Finished search in {elapsed_time} seconds.')
@@ -187,6 +192,9 @@ def easy_search(args):
     parser.add_argument("tmp", type=str, help="Temporary directory to write things to.")
     parser.add_argument("--format", type=str, default="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata", help="Comma-separated list of variable names to output. Choose from: [query, target, conf, plddt, chopping, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Print headers in output TSV files.")
+    parser.add_argument("--full_length_search", action="store_true", default=False, help="Search DB for entries that match all query domains for each query chain (domain ordering not currently considered).")
+    # TODO this could be a subparser, has better-looking help output
+    parser.add_argument("--full_length_mode", type=str, default='exhaustive_tmalign', nargs=1, choices=['embscore', 'exhaustive_tmalign'], help="If --full_length_search is used, specifies the full-length search mode. 'basic': report common hit chain IDs in per-query-chain hit lists. 'embscore': use embedding score corrections to gather matching chains. 'exhaustive_tmalign': Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm>0.5) to domains in the hit, it is a full-length hit.")
 
     # TODO we could organise these into argument groups, will make help easier to understand
     # Foldclass (search) options
@@ -309,10 +317,34 @@ def easy_search(args):
         pdb_chain=pdb_chains_for_search,
         search_batchsize=args.search_batchsize,
         search_type=args.search_metric,
+        skip_tmalign=args.full_length_search
     )
-    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
-    if args.report_insignificant_hits:
-        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)    
+    if not args.full_length_search:
+        write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
+        if args.report_insignificant_hits:
+            write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)    
+    else:
+        # call full-length search routine
+        
+        fl_search_results = full_length_search(
+            queries=segment_domains,
+            search_results = search_results,
+            db_name=args.db_name,
+            tmp=args.tmp,
+            device=args.device,
+            # topk=args.topk,
+            fastmode=args.fastmode, 
+            threads=args.threads, 
+            # mincos=args.mincos, 
+            mintm=args.mintm, 
+            # mincov=args.mincov,
+            # inputs_are_ca=True,
+            # search_batchsize=args.search_batchsize,
+            # search_type=args.search_metric,
+            inputs_from_easy_search=True,
+            mode=args.full_length_mode
+        )
+        
     elapsed_time = time.time() - start_time
     logging.info(f'Finished easy-search in {elapsed_time:.3f} seconds.')
 
@@ -321,7 +353,7 @@ def easy_search(args):
 def main():
     setup_logging()
     usage = """Usage: python merizo.py <mode> <args>
-    <mode> is one of: 'segment', 'createdb', 'search', or 'easy-search'
+    <mode> is one of: 'segment', 'createdb', 'search', or 'easy-search'.
     Detailed help is available for each mode: 
         python merizo.py segment --help
         python merizo.py createdb --help
