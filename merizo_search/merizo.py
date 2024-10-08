@@ -192,8 +192,9 @@ def easy_search(args):
     parser.add_argument("tmp", type=str, help="Temporary directory to write things to.")
     parser.add_argument("--format", type=str, default="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata", help="Comma-separated list of variable names to output. Choose from: [query, target, conf, plddt, chopping, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Print headers in output TSV files.")
-    parser.add_argument("--full_length_search", action="store_true", default=True, help="Search DB for entries that match all query domains for each query chain (domain ordering not currently considered).")
-    parser.add_argument("--full_length_mode", type=str, default='basic', nargs=1, choices=['basic', 'embscore', 'exhaustive_tmalign'], help="Full-length search mode. 'basic': report common hit chain IDs in per-query-chain hit lists. 'embscore': use embedding score corrections to gather matching chains. 'exhaustive_tmalign': Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm>0.5) to domains in the hit, it is a full-length hit.")
+    parser.add_argument("--full_length_search", action="store_true", default=False, help="Search DB for entries that match all query domains for each query chain (domain ordering not currently considered).")
+    # TODO this could be a subparser, has better-looking help output
+    parser.add_argument("--full_length_mode", type=str, default='exhaustive_tmalign', nargs=1, choices=['embscore', 'exhaustive_tmalign'], help="If --full_length_search is used, specifies the full-length search mode. 'basic': report common hit chain IDs in per-query-chain hit lists. 'embscore': use embedding score corrections to gather matching chains. 'exhaustive_tmalign': Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm>0.5) to domains in the hit, it is a full-length hit.")
 
     # TODO we could organise these into argument groups, will make help easier to understand
     # Foldclass (search) options
@@ -328,18 +329,18 @@ def easy_search(args):
         fl_search_results = full_length_search(
             queries=segment_domains,
             search_results = search_results,
-            target_db=args.db_name,
+            db_name=args.db_name,
             tmp=args.tmp,
             device=args.device,
-            topk=args.topk,
+            # topk=args.topk,
             fastmode=args.fastmode, 
             threads=args.threads, 
-            mincos=args.mincos, 
+            # mincos=args.mincos, 
             mintm=args.mintm, 
-            mincov=args.mincov,
-            inputs_are_ca=True,
-            search_batchsize=args.search_batchsize,
-            search_type=args.search_metric,
+            # mincov=args.mincov,
+            # inputs_are_ca=True,
+            # search_batchsize=args.search_batchsize,
+            # search_type=args.search_metric,
             inputs_from_easy_search=True,
             mode=args.full_length_mode
         )
@@ -352,7 +353,7 @@ def easy_search(args):
 def main():
     setup_logging()
     usage = """Usage: python merizo.py <mode> <args>
-    <mode> is one of: 'segment', 'createdb', 'search', or 'easy-search'
+    <mode> is one of: 'segment', 'createdb', 'search', or 'easy-search'.
     Detailed help is available for each mode: 
         python merizo.py segment --help
         python merizo.py createdb --help
