@@ -123,7 +123,7 @@ def search(args):
     parser.add_argument('-m', '--mintm', type=float, default=0.5, required=False, help="(float, [0.0-1.0]) Filter hits by minimum TM-align score to database matches.")
     parser.add_argument('-c', '--mincov', type=float, default=0.7, required=False, help="(float, [0.0-1.0]) Filter hits by minimum coverage of database matches.")
     parser.add_argument('-f', '--fastmode', action='store_true', required=False, help="Use the fast mode of TM-align to verify hits.")
-    parser.add_argument("--format", type=str, default="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_t7m,max_tm,rmsd", help="Comma-separated list of variable names to output. Choose from: [query, target, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
+    parser.add_argument("--format", type=str, default="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd", help="Comma-separated list of variable names to output. Choose from: [query, target, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Print headers in output TSV files.")
     parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if more than one input pdb is provided.")
     parser.add_argument('--search_batchsize', type=int, default=262144, required=False, help='For searches against Faiss databases, the search batchsize to use. Ignored otherwise.')
