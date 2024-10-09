@@ -11,7 +11,7 @@ cd /path/to/merizo_search
 conda create -n merizo_search python=3.9
 conda activate merizo_search
 pip install -r merizo_search/programs/Merizo/requirements.txt
-conda install faiss-gpu
+conda install -c pytorch -c nvidia faiss-gpu
 ```
 For the CPU-only version of Faiss, replace the last step with `conda install faiss-cpu`. A GPU provides only minor speedups for searching with Faiss, but is beneficial when segmenting and/or embedding many structures.
 We recommend using conda as there is no official Faiss package on PyPI the time of writing. Unofficial packages are available; use these at your own risk.

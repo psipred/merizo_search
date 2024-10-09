@@ -15,6 +15,7 @@ from programs.utils import (
     parse_output_format, 
     write_search_results, 
     write_segment_results,
+    write_all_dom_search_results,
     check_for_database
 )
 
@@ -131,6 +132,8 @@ def search(args):
     parser.add_argument("--report_insignificant_hits", action="store_true", default=False, help="Output a second results_search file that contains hits with TM-align scores less than --mintm threshold.")
     parser.add_argument("--metadata_json", action="store_true", default=False, help="Output metadata for hits in JSON format.")
     parser.add_argument("--full_length_search", action="store_true", default=False, help="Search DB for entries that match all query domains (all domains are treated as coming from one chain; domain ordering not currently considered while matching).")
+    parser.add_argument("--full_length_mode", type=str, default='exhaustive_tmalign', choices=['embscore', 'exhaustive_tmalign'], help="If --full_length_search is used, specifies the full-length search mode. 'embscore': use embedding score corrections to gather matching chains. 'exhaustive_tmalign': Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm>0.5) to domains in the hit, it is a full-length hit.")
+
     args = parser.parse_args(args)
     
     logging.info('Starting search with command: \n\n{}\n'.format(
@@ -146,6 +149,11 @@ def search(args):
         logging.warning(f"Search output file '{search_output}' already exists. Results will be overwritten!")
     if os.path.exists(all_search_output):
         logging.warning(f"Search output file '{all_search_output}' already exists. Results will be overwritten!")
+
+    if args.full_length_search:
+        full_length_search_output = args.output + '_all_dom_search.tsv'
+        if os.path.exists(full_length_search_output):
+            logging.warning(f"All-domain search output file '{full_length_search_output}' already exists. Results will be overwritten!")
     
     output_fields = parse_output_format(
         format_str=args.format, 
@@ -177,6 +185,26 @@ def search(args):
             write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers,metadata_json=args.metadata_json)
     else:
         # call full-length search routine
+        fl_search_results = full_length_search(
+            queries=segment_domains,
+            search_results = search_results,
+            db_name=args.db_name,
+            tmp=args.tmp,
+            device=args.device,
+            # topk=args.topk,
+            fastmode=args.fastmode, 
+            threads=args.threads, 
+            # mincos=args.mincos, 
+            mintm=args.mintm, 
+            # mincov=args.mincov,
+            # inputs_are_ca=True,
+            # search_batchsize=args.search_batchsize,
+            # search_type=args.search_metric,
+            inputs_from_easy_search=True,
+            mode=args.full_length_mode
+        )
+        
+        write_all_dom_search_results(fl_search_results, full_length_search_output, args.output_headers)
         pass
     
     elapsed_time = time.time() - start_time
@@ -194,7 +222,7 @@ def easy_search(args):
     parser.add_argument("--output_headers", action="store_true", default=False, help="Print headers in output TSV files.")
     parser.add_argument("--full_length_search", action="store_true", default=False, help="Search DB for entries that match all query domains for each query chain (domain ordering not currently considered).")
     # TODO this could be a subparser, has better-looking help output
-    parser.add_argument("--full_length_mode", type=str, default='exhaustive_tmalign', nargs=1, choices=['embscore', 'exhaustive_tmalign'], help="If --full_length_search is used, specifies the full-length search mode. 'basic': report common hit chain IDs in per-query-chain hit lists. 'embscore': use embedding score corrections to gather matching chains. 'exhaustive_tmalign': Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm>0.5) to domains in the hit, it is a full-length hit.")
+    parser.add_argument("--full_length_mode", type=str, default='exhaustive_tmalign', choices=['embscore', 'exhaustive_tmalign'], help="If --full_length_search is used, specifies the full-length search mode. 'embscore': use embedding score corrections to gather matching chains. 'exhaustive_tmalign': Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm>0.5) to domains in the hit, it is a full-length hit.")
 
     # TODO we could organise these into argument groups, will make help easier to understand
     # Foldclass (search) options
@@ -258,7 +286,12 @@ def easy_search(args):
         logging.warning(f"Search output file '{search_output}' already exists. Results will be overwritten!")
     if os.path.exists(all_search_output):
         logging.warning(f"Search output file '{all_search_output}' already exists. Results will be overwritten!")
-         
+
+    if args.full_length_search:
+        full_length_search_output = args.output + '_all_dom_search.tsv'
+        if os.path.exists(full_length_search_output):
+            logging.warning(f"All-domain search output file '{full_length_search_output}' already exists. Results will be overwritten!")
+
     output_fields = parse_output_format(
         format_str=args.format, 
         expected_str="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata"
@@ -345,6 +378,7 @@ def easy_search(args):
             mode=args.full_length_mode
         )
         
+        write_all_dom_search_results(fl_search_results, full_length_search_output, args.output_headers)
     elapsed_time = time.time() - start_time
     logging.info(f'Finished easy-search in {elapsed_time:.3f} seconds.')
 
