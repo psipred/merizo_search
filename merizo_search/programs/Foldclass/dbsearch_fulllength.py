@@ -154,8 +154,8 @@ def tmalign_submatrix_to_hits(mtx: np.array, qc:str, hc:str, qds: list[str], hds
     return result
 
     
-def full_length_search(queries:list[dict], # each dict has at least 'coords', 'seq', 'name'
-                        search_results,
+def full_length_search(queries:list, # if list[str], treat as filenames, if list[dict], each dict has at least 'coords', 'seq', 'name'
+                       search_results,
                        db_name,
                        tmp: str,
                        device: torch.device,
@@ -169,7 +169,8 @@ def full_length_search(queries:list[dict], # each dict has at least 'coords', 's
                     #    search_batchsize:int=262144,
                     #    search_type='IP',
                        inputs_from_easy_search=False,
-                       mode="basic"
+                       mode="exhaustive_tmalign",
+                       pdb_chain=None
                        ):
     """
     TODO list:
@@ -186,6 +187,20 @@ def full_length_search(queries:list[dict], # each dict has at least 'coords', 's
     if len(queries) == 1: # regardless of the state of inputs_from_easy_search
         logger.warning("cannot execute full-length search with only one query domain.")
         return None
+    
+    if not inputs_from_easy_search:
+        if pdb_chain:
+            pdb_chain = pdb_chain.rstrip(",")
+            pdb_chains = pdb_chain.split(",")
+        else:
+            pdb_chains = ["A"] * nq
+        query_dicts = list()
+        nq = len(queries)
+        for idx, i in enumerate(range(nq)):
+            # Read coords and seq from PDB file
+                query_dicts.append(read_pdb(pdbfile=queries[i], pdb_chain=pdb_chains[idx]))
+            
+        queries = query_dicts
 
     # extract potential chains for full-length matching
     logger.info('Start full-length search...')

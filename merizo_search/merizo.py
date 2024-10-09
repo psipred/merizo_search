@@ -186,7 +186,7 @@ def search(args):
     else:
         # call full-length search routine
         fl_search_results = full_length_search(
-            queries=segment_domains,
+            queries=args.input,
             search_results = search_results,
             db_name=args.db_name,
             tmp=args.tmp,
@@ -375,7 +375,8 @@ def easy_search(args):
             # search_batchsize=args.search_batchsize,
             # search_type=args.search_metric,
             inputs_from_easy_search=True,
-            mode=args.full_length_mode
+            mode=args.full_length_mode,
+            pdb_chain=None
         )
         
         write_all_dom_search_results(fl_search_results, full_length_search_output, args.output_headers)
