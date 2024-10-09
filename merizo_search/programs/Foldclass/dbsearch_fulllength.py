@@ -184,7 +184,8 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
     So, in 'search' mode, we have to treat all queries as coming from one chain.
         in easy-search mode we map domains to the original query chains.
     """
-    if len(queries) == 1: # regardless of the state of inputs_from_easy_search
+    nq = len(queries)
+    if nq == 1: # regardless of the state of inputs_from_easy_search
         logger.warning("cannot execute full-length search with only one query domain.")
         return None
     
@@ -195,10 +196,9 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
         else:
             pdb_chains = ["A"] * nq
         query_dicts = list()
-        nq = len(queries)
-        for idx, i in enumerate(range(nq)):
+        for i in range(nq):
             # Read coords and seq from PDB file
-                query_dicts.append(read_pdb(pdbfile=queries[i], pdb_chain=pdb_chains[idx]))
+            query_dicts.append(read_pdb(pdbfile=queries[i], pdb_chain=pdb_chains[i]))
             
         queries = query_dicts
 
