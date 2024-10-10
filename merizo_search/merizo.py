@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import shutil
 import logging
 import time
 
@@ -117,7 +118,7 @@ def search(args):
     parser.add_argument('db_name', type=str, help="Prefix of Foldclass database to search against.")
     parser.add_argument("output", type=str, help="Output file prefix to write search results to. Results will be called _search.tsv.")
     parser.add_argument('tmp', type=str, help="Temporary directory to write things to.")
-    parser.add_argument("-d", "--device", type=str, default="cpu", help="Hardware to run on. Options: 'cpu', 'cuda', 'mps'.")
+    parser.add_argument("-d", "--device", type=str, default="cpu", help="Hardware to run vector search on. Options: 'cpu', 'cuda', 'mps'.")
     parser.add_argument('-k', '--topk', type=int, default=1, required=False, help="Max number of domain matches to return for each segmented domain.")
     parser.add_argument('-t', '--threads', type=int, default=-1, required=False, help="Number of CPU threads to use.")
     parser.add_argument('-s', '--mincos', type=float, default=0.5, required=False, help="(float, [0.0-1.0]) Filter hits by minumum cosine similarity to database matches.")
@@ -205,10 +206,10 @@ def search(args):
         )
         
         write_all_dom_search_results(fl_search_results, full_length_search_output, args.output_headers)
-        pass
-    
+        
     elapsed_time = time.time() - start_time
     logging.info(f'Finished search in {elapsed_time} seconds.')
+    shutil.rmtree(args.tmp)
 
 # Function to handle easy-search mode
 def easy_search(args):
@@ -226,7 +227,7 @@ def easy_search(args):
 
     # TODO we could organise these into argument groups, will make help easier to understand
     # Foldclass (search) options
-    parser.add_argument("-d", "--device", type=str, default="cpu", help="Hardware to run on. Options: 'cpu', 'cuda', 'mps'.")
+    parser.add_argument("-d", "--device", type=str, default="cpu", help="Hardware to run vector search on. Options: 'cpu', 'cuda', 'mps'.")
     parser.add_argument('-k', '--topk', type=int, default=1, required=False, help="Max number of domain matches to return for each segmented domain.")
     parser.add_argument('-t', '--threads', type=int, default=-1, required=False, help="Number of CPU threads to use.")
     parser.add_argument('-s', '--mincos', type=float, default=0.5, required=False, help="(float, [0.0-1.0]) Filter hits by minumum cosine similarity to database matches.")
@@ -382,6 +383,7 @@ def easy_search(args):
         write_all_dom_search_results(fl_search_results, full_length_search_output, args.output_headers)
     elapsed_time = time.time() - start_time
     logging.info(f'Finished easy-search in {elapsed_time:.3f} seconds.')
+    shutil.rmtree(args.tmp)
 
 
 # Main function to parse arguments and call respective functions

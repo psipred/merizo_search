@@ -177,8 +177,9 @@ def write_segment_results(results: list[dict], output_file: str, header: bool):
 
 
 def write_all_dom_search_results(results: list[tuple], output_file:str, header:bool):
-    with open(output_file, 'w+') as fn:
-        if header:
-            fn.write('query_chain\tnqd\thit_chain\tnhd\tmatch_category\tmatch_info\thit_metadata\n')    
-        for res in results:
-            fn.write("\t".join([str(a) for a in res])+'\n')
+    if results is not None:
+        with open(output_file, 'w+') as fn:
+            if header:
+                fn.write('query_chain\tnqd\thit_chain\tnhd\tmatch_category\tmatch_info\thit_metadata\n')    
+            for res in results:
+                fn.write("\t".join([str(a) for a in res])+'\n')

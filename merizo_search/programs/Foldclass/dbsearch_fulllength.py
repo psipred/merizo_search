@@ -147,7 +147,7 @@ def tmalign_submatrix_to_hits(mtx: np.array, qc:str, hc:str, qds: list[str], hds
         result.append(
             (qc, nqd, hc, nhd, match_cat,  
              domain_field_set_separator.join(match_info),
-             domain_field_set_separator.join(match_metadata),
+             '['+domain_field_set_separator.join(match_metadata)+']', # JSON array
             )
             )
     
@@ -182,11 +182,11 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
     in easy-search: domain names are suffixed with _merizo_01 etc.
     in search: could be anything.
     So, in 'search' mode, we have to treat all queries as coming from one chain.
-        in easy-search mode we map domains to the original query chains.
+        in 'easy-search' mode, we map domains to the original query chains.
     """
     nq = len(queries)
     if nq == 1: # regardless of the state of inputs_from_easy_search
-        logger.warning("cannot execute full-length search with only one query domain.")
+        logger.warning("Cannot execute full-length search with only one query domain.")
         return None
     
     if not inputs_from_easy_search:
@@ -201,6 +201,9 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
             query_dicts.append(read_pdb(pdbfile=queries[i], pdb_chain=pdb_chains[i]))
             
         queries = query_dicts
+
+    tmp = os.path.join(tmp, 'MD_search_structures')
+    os.makedirs(tmp, exist_ok=True)
 
     # extract potential chains for full-length matching
     logger.info('Start full-length search...')
@@ -456,7 +459,7 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
                 del index_entries_to_align1
             
             # now, write out all the pdbs we need for alignment. first queries, then targets
-            logger.info("Run TM-align for all query-hit combinations, query domains from query chain "+qc+"...")
+
             for qd in initial_hit_index[qc].keys():
                 initial_hit_index[qc][qd]['qfname'] = write_pdb(tmp, initial_hit_index[qc][qd]['qcoords'], 
                                                                 initial_hit_index[qc][qd]['qseq'], 
@@ -473,7 +476,7 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
             # n_targets_to_align = len(target_fnames)
 
             # parallel version
-            logger.info('start parallel tmalign...')
+            logger.info("Run TM-align for all query-hit combinations, query domains from query chain "+qc+"...")
             tmscore_mtx = parallel_fill_tmalign_array(qfnames=[ initial_hit_index[qc][qd]['qfname'] for qd in initial_hit_index[qc].keys() ], 
                                                         tfnames=target_fnames, 
                                                         ncpu=threads, 
@@ -537,7 +540,6 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
                                                         )
                 if len(subresult) > 0:
                     final_mda_results.extend( subresult )
-            # TODO delete all pdb files created
             
         return final_mda_results                           
     # elif mode == "embscore": # bonus to scores mode
@@ -553,7 +555,6 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
     #         # Apply score corrections per query and per db iterator batch; a single ResultHeap can still be used                    
     #         pass
     #     else: # not faiss db
-
     #         pass
     else:
         logger.error("Unrecognised full-length search mode: "+ mode)
