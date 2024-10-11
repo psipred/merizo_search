@@ -1,6 +1,6 @@
 # Merizo-search
 
-Merizo-search is a method that builds on the original Merizo (Lau et al., 2023) by combining state-of-the-art domain segmentation with fast embedding-based searching. Specifically, Merizo-search makes use of an EGNN-based method called Foldclass, which embeds a structure and its sequence into a fixed size 128-length vector. This vector is then searched against a pre-encoded library of domains, and the top-K matches in terms of cosine similarity are used for confirmatory TM-align runs to validate the search. Merizo-search also supports searching larger-then-memory databases of embeddings using the Faiss library.
+Merizo-search is a method that builds on the original Merizo (Lau et al., 2023) by combining state-of-the-art domain segmentation with fast embedding-based searching. Specifically, Merizo-search makes use of an EGNN-based method called Foldclass, which embeds a structure and its sequence into a fixed size 128-length vector. This vector is then searched against a pre-encoded library of domains, and the top-K matches in terms of cosine similarity are used for confirmatory TM-align runs to validate the search. Merizo-search also supports searching larger-than-memory databases of embeddings using the Faiss library.
 
 ## Installation
 
@@ -157,6 +157,11 @@ merizo_search/merizo.py createdb examples/database/cath_ssg5_pdb_files/ examples
 2024-03-10 20:02:41,342 | INFO | Finished merizo createdb in 1707.4179711341858 seconds.
 ```
 
+### Multi-domain searching
+
+Both `search` and `easy-search` support searching for database entries that match all domains in a query. In the case of `search`, all supplied query structures are considered as originating from a single chain and searched against the database. In the case of `easy-search`, segmentation and multi-domain search operate on a per-query-chain basis, that is, only domains segmented from a single query chain are searched together.
+
+To enable multi-domain searching, add the option `--multi-domain-search` to a `search` or `easy-search` command.
 
 ### Outputs
 

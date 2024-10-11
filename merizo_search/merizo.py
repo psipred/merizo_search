@@ -32,14 +32,17 @@ def segment(args):
     parser.add_argument("-d", "--device", type=str, default="cpu", help="Hardware to run on. Options: 'cpu', 'cuda', 'mps'.")
     parser.add_argument("--merizo_output", type=str, default=os.environ['PWD'], help="Designate where to save the merizo outputs to.")
     parser.add_argument("--save_pdf", action="store_true", default=False, help="Include to save the domain map as a pdf.")
-    parser.add_argument("--save_pdb", action="store_true", default=False, help="Include to save the result as a pdb file. All domains will be included unless --conf_filter or --plddt_filter is used.")
+    parser.add_argument("--save_pdb", action="store_true", default=False, 
+                        help="Include to save the result as a pdb file. All domains will be included unless --conf_filter or --plddt_filter is used.")
     parser.add_argument("--save_domains", action="store_true", default=False, help="Include to save parsed domains as separate pdb files. Also saves the full pdb.")
     parser.add_argument("--save_fasta", action="store_true", default=False, help="Include to save a fasta file of the input pdb.")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Print headers in output TSV files.")
     parser.add_argument("--conf_filter", type=float, default=None, help="(float, [0.0-1.0]) If specified, only domains with a pIoU above this threshold will be saved.")
-    parser.add_argument("--plddt_filter", type=float, default=None, help="(float, [0.0-1.0]) If specified, only domain with a plDDT above this threshold will be saved. Note: if used on a non-AF structure, this will correspond to crystallographic b-factors.")
+    parser.add_argument("--plddt_filter", type=float, default=None, 
+                        help="(float, [0.0-1.0]) If specified, only domain with a plDDT above this threshold will be saved. Note: if used on a non-AF structure, this will correspond to crystallographic b-factors.")
     parser.add_argument("--iterate", action="store_true", help=f"If used, domains under a length threshold (see --min_domain_size) will be re-segmented.")
-    parser.add_argument("--length_conditional_iterate", action="store_true", help=f"If used, --iterate is set to True when the input sequence length is greater than 512 residues or greater.")
+    parser.add_argument("--length_conditional_iterate", action="store_true", help=
+                        f"If used, --iterate is set to True when the input sequence length is greater than 512 residues or greater.")
     parser.add_argument("--max_iterations", type=int, default=3, help="(int [1, inf]) Specify the maximum number of re-segmentations that can occur.")
     parser.add_argument("--shuffle_indices", action="store_true", default=False, help="Shuffle domain indices - increases contrast between domain colours in PyMOL.")
     parser.add_argument("--return_indices", action="store_true", default=False, help="Return the domain indices for all residues.")
@@ -47,7 +50,8 @@ def segment(args):
     parser.add_argument("--min_fragment_size", type=int, default=10, help="Minimum number of residues in a segment.")
     parser.add_argument("--domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
-    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Default is chain A for all input PDBs. You can provide a comma separated list if you can provide more than one input pdb.")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", 
+                        help="Select which PDB Chain you are analysing. Default is chain A for all input PDBs. You can provide a comma separated list if you can provide more than one input pdb.")
 
     args = parser.parse_args(args)
     
@@ -125,15 +129,23 @@ def search(args):
     parser.add_argument('-m', '--mintm', type=float, default=0.5, required=False, help="(float, [0.0-1.0]) Filter hits by minimum TM-align score to database matches.")
     parser.add_argument('-c', '--mincov', type=float, default=0.7, required=False, help="(float, [0.0-1.0]) Filter hits by minimum coverage of database matches.")
     parser.add_argument('-f', '--fastmode', action='store_true', required=False, help="Use the fast mode of TM-align to verify hits.")
-    parser.add_argument("--format", type=str, default="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata", help="Comma-separated list of variable names to output. Choose from: [query, target, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
+    parser.add_argument("--format", type=str, default="query,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata", 
+                        help="Comma-separated list of variable names to output. Choose from: [query, target, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Print headers in output TSV files.")
-    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if more than one input pdb is provided.")
-    parser.add_argument('--search_batchsize', type=int, default=262144, required=False, help='For searches against Faiss databases, the search batchsize to use. Ignored otherwise.')
-    parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported.')
-    parser.add_argument("--report_insignificant_hits", action="store_true", default=False, help="Output a second results_search file that contains hits with TM-align scores less than --mintm threshold.")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", 
+                        help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if more than one input pdb is provided.")
+    parser.add_argument('--search_batchsize', type=int, default=262144, required=False, 
+                        help='For searches against Faiss databases, the search batchsize to use. Ignored otherwise.')
+    parser.add_argument('--search_metric', type=str, default='IP', required=False, 
+                        help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported.')
+    parser.add_argument("--report_insignificant_hits", action="store_true", default=False, 
+                        help="Output a second results_search file that contains hits with TM-align scores less than --mintm threshold.")
     parser.add_argument("--metadata_json", action="store_true", default=False, help="Output metadata for hits in JSON format.")
-    parser.add_argument("--full_length_search", action="store_true", default=False, help="Search DB for entries that match all query domains (all domains are treated as coming from one chain; domain ordering not currently considered while matching).")
-    parser.add_argument("--full_length_mode", type=str, default='exhaustive_tmalign', choices=['embscore', 'exhaustive_tmalign'], help="If --full_length_search is used, specifies the full-length search mode. 'embscore': use embedding score corrections to gather matching chains. 'exhaustive_tmalign': Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm>0.5) to domains in the hit, it is a full-length hit.")
+    parser.add_argument("--multi_domain_search", action="store_true", default=False, 
+                        help="Search DB for entries that match all query domains (all query structures are treated as single domains coming from one chain).")
+    parser.add_argument("--multi_domain_mode", type=str, default='exhaustive_tmalign', choices=['exhaustive_tmalign'], 
+                        help="If --full_length_search is used, specifies the full-length search mode. Currently only 'exhaustive_tmalign' is supported.")
+                         #Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm> --mintm) to domains in the hit, it is a full-length hit.")
 
     args = parser.parse_args(args)
     
@@ -178,13 +190,13 @@ def search(args):
         pdb_chain=args.pdb_chain,
         search_batchsize=args.search_batchsize,
         search_type=args.search_metric,
-        skip_tmalign=args.full_length_search
+        skip_tmalign=False #args.full_length_search
     )
-    if not args.full_length_search:
-        write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
-        if args.report_insignificant_hits:
-            write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers,metadata_json=args.metadata_json)
-    else:
+    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
+    if args.report_insignificant_hits:
+        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers,metadata_json=args.metadata_json)
+    
+    if args.full_length_search:
         # call full-length search routine
         fl_search_results = full_length_search(
             queries=args.input,
@@ -219,11 +231,15 @@ def easy_search(args):
     parser.add_argument("db_name", type=str, help="Prefix of Foldclass database to search against.")
     parser.add_argument("output", type=str, help="Output file prefix to write segment and search results to. Results will be called _segment.tsv and _search.tsv.")
     parser.add_argument("tmp", type=str, help="Temporary directory to write things to.")
-    parser.add_argument("--format", type=str, default="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata", help="Comma-separated list of variable names to output. Choose from: [query, target, conf, plddt, chopping, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
+    parser.add_argument("--format", type=str, default="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata", 
+                        help="Comma-separated list of variable names to output. Choose from: [query, target, conf, plddt, chopping, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Print headers in output TSV files.")
-    parser.add_argument("--full_length_search", action="store_true", default=False, help="Search DB for entries that match all query domains for each query chain (domain ordering not currently considered).")
+    parser.add_argument("--full_length_search", action="store_true", default=False, 
+                        help="Search DB for entries that match all query domains for each query chain (domain ordering not currently considered).")
     # TODO this could be a subparser, has better-looking help output
-    parser.add_argument("--full_length_mode", type=str, default='exhaustive_tmalign', choices=['embscore', 'exhaustive_tmalign'], help="If --full_length_search is used, specifies the full-length search mode. 'embscore': use embedding score corrections to gather matching chains. 'exhaustive_tmalign': Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm>0.5) to domains in the hit, it is a full-length hit.")
+    parser.add_argument("--full_length_mode", type=str, default='exhaustive_tmalign', choices=['exhaustive_tmalign'], 
+                        help="If --full_length_search is used, specifies the full-length search mode. Currently only 'exhaustive_tmalign' is supported.")
+                        #: Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm> --mintm) to domains in the hit, it is a full-length hit.")
 
     # TODO we could organise these into argument groups, will make help easier to understand
     # Foldclass (search) options
@@ -234,21 +250,29 @@ def easy_search(args):
     parser.add_argument('-m', '--mintm', type=float, default=0.5, required=False, help="(float, [0.0-1.0]) Filter hits by minimum TM-align score to database matches.")
     parser.add_argument('-c', '--mincov', type=float, default=0.7, required=False, help="(float, [0.0-1.0]) Filter hits by minimum coverage of database matches.")
     parser.add_argument('-f', '--fastmode', action='store_true', required=False, help="Use the fast mode of TM-align to verify hits.")
-    parser.add_argument('--search_batchsize', type=int, default=262144, required=False, help='For searches against Faiss databases, the search batchsize to use. Ignored otherwise.')
-    parser.add_argument('--search_metric', type=str, default='IP', required=False, help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported')
-    parser.add_argument("--report_insignificant_hits", action="store_true", default=False, help="Output a second results_search file that contains hits with TM-align scores less than the --mintm threshold.")
+    parser.add_argument('--search_batchsize', type=int, default=262144, required=False, 
+                        help='For searches against Faiss databases, the search batchsize to use. Ignored otherwise.')
+    parser.add_argument('--search_metric', type=str, default='IP', required=False, 
+                        help='For searches against Faiss databases, the search metric to use. Ignored otherwise. Currently only \'IP\' (cosine similarity) is supported')
+    parser.add_argument("--report_insignificant_hits", action="store_true", default=False, 
+                        help="Output a second results_search file that contains hits with TM-align scores less than the --mintm threshold.")
     parser.add_argument("--metadata_json", action="store_true", default=False, help="Output metadata for hits in JSON format.")
 
     # Merizo options
     parser.add_argument("--merizo_output", type=str, default=os.environ['PWD'], help="Designate where to save the merizo outputs to.")
     parser.add_argument("--save_pdf", action="store_true", default=False, help="Include to save the domain map as a pdf.")
-    parser.add_argument("--save_pdb", action="store_true", default=False, help="Include to save the result as a pdb file. All domains will be included unless --conf_filter and/or --plddt_filter are used.")
+    parser.add_argument("--save_pdb", action="store_true", default=False, 
+                        help="Include to save the result as a pdb file. All domains will be included unless --conf_filter and/or --plddt_filter are used.")
     parser.add_argument("--save_domains", action="store_true", default=False, help="Include to save parsed domains as separate pdb files. Also saves the full pdb.")
     parser.add_argument("--save_fasta", action="store_true", default=False, help="Include to save a fasta file of the input pdb.")
-    parser.add_argument("--conf_filter", type=float, default=None, help="(float, [0.0-1.0]) If specified, segmented domains will onyl be returned if they have a pIoU above this threshold. ")
-    parser.add_argument("--plddt_filter", type=float, default=None, help="(float, [0.0-1.0]) If specified, segmented domains will only be returned if they have a plDDT above this threshold. Note: if used on an X-ray structure, this will correspond to crystallographic B-factors.")
-    parser.add_argument("--iterate", action="store_true", help=f"If used, domains under a length threshold (see --min_domain_size) will be re-segmented.")
-    parser.add_argument("--length_conditional_iterate", action="store_true", help=f"If used, --iterate is set to True when the input sequence length is 512 residues or greater.")
+    parser.add_argument("--conf_filter", type=float, default=None, 
+                        help="(float, [0.0-1.0]) If specified, segmented domains will onyl be returned if they have a pIoU above this threshold. ")
+    parser.add_argument("--plddt_filter", type=float, default=None, 
+                        help="(float, [0.0-1.0]) If specified, segmented domains will only be returned if they have a plDDT above this threshold. Note: if used on an X-ray structure, this will correspond to crystallographic B-factors.")
+    parser.add_argument("--iterate", action="store_true", 
+                        help=f"If used, domains under a length threshold (see --min_domain_size) will be re-segmented.")
+    parser.add_argument("--length_conditional_iterate", action="store_true", 
+                        help=f"If used, --iterate is set to True when the input sequence length is 512 residues or greater.")
     parser.add_argument("--max_iterations", type=int, default=3, help="(int [1, inf]) Specify the maximum number of re-segmentation passes that can occur.")
     parser.add_argument("--shuffle_indices", action="store_true", default=False, help="Shuffle domain indices - increases contrast between domain colours in PyMOL.")
     parser.add_argument("--return_indices", action="store_true", default=False, help="Return the domain indices for all residues.")
@@ -256,7 +280,8 @@ def easy_search(args):
     parser.add_argument("--min_fragment_size", type=int, default=10, help="Minimum number of residues in a segment.")
     parser.add_argument("--domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
-    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
+    parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", 
+                        help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
     
     args = parser.parse_args(args)
     
@@ -351,14 +376,13 @@ def easy_search(args):
         pdb_chain=pdb_chains_for_search,
         search_batchsize=args.search_batchsize,
         search_type=args.search_metric,
-        skip_tmalign=args.full_length_search
+        skip_tmalign=False #args.full_length_search
     )
-    if not args.full_length_search:
-        write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
-        if args.report_insignificant_hits:
-            write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)    
-    else:
-        # call full-length search routine
+
+    write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
+    if args.report_insignificant_hits:
+        write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)    
+    if args.full_length_search:
         
         fl_search_results = full_length_search(
             queries=segment_domains,

@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 def domid2chainid_fn(x):
     # given 'cath-dompdb/2pi4A04.pdb' return '2pi4A'
     # given 'xxx/AF-Q93009-F1-model_v4_TED02.pdb' return 'AF-Q93009-F1-model_v4'
-    return re.sub("[0-9]*$", "", os.path.basename(x).rstrip('.pdb')).rstrip('_').rstrip('_TED') 
+    return re.sub("[0-9]{2}$", "", os.path.basename(x).rstrip('.pdb')).rstrip('_').removesuffix('_TED')
 
 
 def run_tmalign2(args):
@@ -292,7 +292,6 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
         #     logger.info("Query chain " + qc + ": "+ str(nint) + " full-length hits found in top-k hit lists.")
         """
                 
-    logger.info("Starting expanded full-length search...")
     target_db = read_database(db_name=db_name, device=device)
         # construct db_indices_to_extract by checking db ids in the vicinity of the hit indices.
     all_db_indices_to_extract = dict()
