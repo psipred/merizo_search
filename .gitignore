@@ -14,3 +14,4 @@ merizo_search/programs/Foldclass/pdb2emb.py
 merizo_search.code-workspace
 merizo_search/.vscode/
 tmp*
+utils/
