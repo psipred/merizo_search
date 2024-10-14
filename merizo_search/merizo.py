@@ -144,7 +144,7 @@ def search(args):
     parser.add_argument("--multi_domain_search", action="store_true", default=False, 
                         help="Search DB for entries that match all query domains (all query structures are treated as single domains coming from one chain).")
     parser.add_argument("--multi_domain_mode", type=str, default='exhaustive_tmalign', choices=['exhaustive_tmalign'], 
-                        help="If --full_length_search is used, specifies the full-length search mode. Currently only 'exhaustive_tmalign' is supported.")
+                        help="If --multi_domain_search is used, specifies the multi-domain search mode. Currently only 'exhaustive_tmalign' is supported.")
                          #Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm> --mintm) to domains in the hit, it is a full-length hit.")
 
     args = parser.parse_args(args)
@@ -204,15 +204,9 @@ def search(args):
             db_name=args.db_name,
             tmp=args.tmp,
             device=args.device,
-            # topk=args.topk,
             fastmode=args.fastmode, 
-            threads=args.threads, 
-            # mincos=args.mincos, 
-            mintm=args.mintm, 
-            # mincov=args.mincov,
-            # inputs_are_ca=True,
-            # search_batchsize=args.search_batchsize,
-            # search_type=args.search_metric,
+            threads=args.threads,
+            mintm=args.mintm,
             inputs_from_easy_search=True,
             mode=args.full_length_mode
         )
@@ -234,11 +228,11 @@ def easy_search(args):
     parser.add_argument("--format", type=str, default="query,chopping,conf,plddt,emb_rank,target,emb_score,q_len,t_len,ali_len,seq_id,q_tm,t_tm,max_tm,rmsd,metadata", 
                         help="Comma-separated list of variable names to output. Choose from: [query, target, conf, plddt, chopping, emb_rank, emb_score, q_len, t_len, ali_len, seq_id, q_tm, t_tm, max_tm, rmsd].")
     parser.add_argument("--output_headers", action="store_true", default=False, help="Print headers in output TSV files.")
-    parser.add_argument("--full_length_search", action="store_true", default=False, 
+    parser.add_argument("--multi_domain_search", action="store_true", default=False, 
                         help="Search DB for entries that match all query domains for each query chain (domain ordering not currently considered).")
     # TODO this could be a subparser, has better-looking help output
-    parser.add_argument("--full_length_mode", type=str, default='exhaustive_tmalign', choices=['exhaustive_tmalign'], 
-                        help="If --full_length_search is used, specifies the full-length search mode. Currently only 'exhaustive_tmalign' is supported.")
+    parser.add_argument("--multi_domain_mode", type=str, default='exhaustive_tmalign', choices=['exhaustive_tmalign'], 
+                        help="If --multi_domain_search is used, specifies the multi-domain search mode. Currently only 'exhaustive_tmalign' is supported.")
                         #: Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm> --mintm) to domains in the hit, it is a full-length hit.")
 
     # TODO we could organise these into argument groups, will make help easier to understand
@@ -382,23 +376,17 @@ def easy_search(args):
     write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
     if args.report_insignificant_hits:
         write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)    
-    if args.full_length_search:
-        
+    
+    if args.full_length_search:    
         fl_search_results = full_length_search(
             queries=segment_domains,
             search_results = search_results,
             db_name=args.db_name,
             tmp=args.tmp,
             device=args.device,
-            # topk=args.topk,
             fastmode=args.fastmode, 
-            threads=args.threads, 
-            # mincos=args.mincos, 
-            mintm=args.mintm, 
-            # mincov=args.mincov,
-            # inputs_are_ca=True,
-            # search_batchsize=args.search_batchsize,
-            # search_type=args.search_metric,
+            threads=args.threads,
+            mintm=args.mintm,
             inputs_from_easy_search=True,
             mode=args.full_length_mode,
             pdb_chain=None

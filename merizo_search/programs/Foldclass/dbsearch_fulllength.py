@@ -10,9 +10,7 @@ from multiprocessing import Pool, cpu_count
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 
-from .nndef_fold_egnn_embed import FoldClassNet
 from .utils import (
     read_pdb, 
     write_pdb, 
@@ -25,9 +23,6 @@ from .dbutil import (
     retrieve_start_end_by_idx,
     retrieve_bytes,
     coord_conv,
-    db_iterator,
-    db_memmap,
-
 )
 
 from .dbsearch import *
@@ -56,12 +51,10 @@ def parallel_fill_tmalign_array(qfnames:list[str],
                                 keep_pdbs:bool=False
                                 ):
 
-    # tmalign_with_args = partial(run_tmalign2, options=options, keep_pdbs=keep_pdbs)
-
     nrow = len(qfnames)
     ncol = len(tfnames)
 
-    if ncpu == -1 or ncpu < 0: # wiseguy eh
+    if ncpu <= 0: # wiseguy eh
         ncpu = min(nrow*ncol, cpu_count())
     
     # Create lists of all (i, j) combinations
@@ -86,7 +79,7 @@ def tmalign_submatrix_to_hits(mtx: np.array, qc:str, hc:str, qds: list[str], hds
     assert len(hds) == nhd
 
     # filter out obvious no-hit cases
-    # if any row is all zero, there is no full-length hit in this submatrix.
+    # if any row is all zero, there is no multi-domain hit in this submatrix.
     empty_rows = np.where(~mtx.any(axis=1))[0]
     if len(empty_rows) > 0:
         return result
@@ -186,7 +179,7 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
     """
     nq = len(queries)
     if nq == 1: # regardless of the state of inputs_from_easy_search
-        logger.warning("Cannot execute full-length search with only one query domain.")
+        logger.warning("Cannot execute multi-domain search with only one query domain.")
         return None
     
     if not inputs_from_easy_search:
@@ -205,8 +198,8 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
     tmp = os.path.join(tmp, 'MD_search_structures')
     os.makedirs(tmp, exist_ok=True)
 
-    # extract potential chains for full-length matching
-    logger.info('Start full-length search...')
+    # extract potential chains for multi-domain matching
+    logger.info('Start multi-domain search...')
     all_query_domains = list() # merizo-given names for the query domains in dbsearch().
     all_hit_domains = list()
     all_hit_indices = list()
@@ -214,7 +207,7 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
     for qdd in queries:
         qd_coords_seqs[os.path.basename(qdd['name'])] = {"coords": qdd['coords'], "seq":qdd['seq'] }
 
-    # if the same chain id is found for all query domains, then that is a full-length hit. no further work needed.
+    # if the same chain id is found for all query domains, then that is a multi-domain hit. no further work needed.
     # If there are no such ids (or user forces it), then we need to do extra work.
 
     for hitdict in search_results:
@@ -265,13 +258,12 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
         num_query_domains = len(list(initial_hit_index[qc].keys()))
         
         if num_query_domains == 0:
-            logger.info('Query chain '+qc+':no domains detected, skipping full-length search.')
+            logger.info('Query chain '+qc+':no domains detected, skipping multi-domain search.')
             del initial_hit_index[qc]
             continue
 
         if num_query_domains == 1:
-            logger.info('Query chain '+qc+': Only one detected domain, so full-length hits are same as those in the per-domain search results.')
-            # TODO do the confirmatory tm-align!!! don't del initial_hit_index[qc].
+            logger.info('Query chain '+qc+': Only one detected domain, so multi-domain hits are same as those in the per-domain search results.')
             del initial_hit_index[qc]
             continue
         
@@ -285,11 +277,10 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
         # full_length_hit_chains = set.intersection( *hit_chains_per_query_domain.values() )
         
         # if len(full_length_hit_chains) == 0:
-        #     logger.info("Query chain "+ qc +": No full-length hits found with k = "+str(topk)+", maybe try again with a higher value of -k or enable --extra-full-length.")
-        #     #logger.info("   NB: a high setting of -k *and* --extra-full-length will greatly increase runtime for full-length search.")
+        #     logger.info("Query chain "+ qc +": No multi-domain hits found with k = "+str(topk)+", maybe try again with a higher value of -k.")
         # else:
         #     nint = len(full_length_hit_chains)
-        #     logger.info("Query chain " + qc + ": "+ str(nint) + " full-length hits found in top-k hit lists.")
+        #     logger.info("Query chain " + qc + ": "+ str(nint) + " multi-domain hits found in top-k hit lists.")
         """
                 
     target_db = read_database(db_name=db_name, device=device)
@@ -399,7 +390,7 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
         # end for qd in hit_index[qc].keys()
         
         if len(db_indices_to_extract) == 0:
-            logger.info("Query chain " + qc + ": all per-domain hits are single-domain entries in the database. Full-length search not possible for this chain.")
+            logger.info("Query chain " + qc + ": all per-domain hits are single-domain entries in the database. Multi-domain search not possible for this chain.")
             logger.info("Maybe try increasing -k .")
             continue
         
@@ -556,6 +547,6 @@ def full_length_search(queries:list, # if list[str], treat as filenames, if list
     #     else: # not faiss db
     #         pass
     else:
-        logger.error("Unrecognised full-length search mode: "+ mode)
+        logger.error("Unrecognised multi-domain search mode: "+ mode)
         sys.exit(1)
 

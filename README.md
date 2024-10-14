@@ -161,7 +161,7 @@ merizo_search/merizo.py createdb examples/database/cath_ssg5_pdb_files/ examples
 
 Both `search` and `easy-search` support searching for database entries that match all domains in a query. In the case of `search`, all supplied query structures are considered as originating from a single chain and searched against the database. In the case of `easy-search`, segmentation and multi-domain search operate on a per-query-chain basis, that is, only domains segmented from a single query chain are searched together.
 
-To enable multi-domain searching, add the option `--multi-domain-search` to a `search` or `easy-search` command.
+To enable multi-domain searching, add the option `--multi_domain_search` to a `search` or `easy-search` command.
 
 ### Outputs
 
