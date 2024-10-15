@@ -147,7 +147,7 @@ def tmalign_submatrix_to_hits(mtx: np.array, qc:str, hc:str, qds: list[str], hds
     return result
 
     
-def full_length_search(queries:list, # if list[str], treat as filenames, if list[dict], each dict has at least 'coords', 'seq', 'name'
+def multi_domain_search(queries:list, # if list[str], treat as filenames, if list[dict], each dict has at least 'coords', 'seq', 'name'
                        search_results,
                        db_name,
                        tmp: str,

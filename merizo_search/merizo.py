@@ -11,7 +11,7 @@ sys.path.append(os.path.join(SCRIPTDIR, 'programs'))
 from programs.Merizo.predict import run_merizo as segment_pdb
 from programs.Foldclass.makedb import run_createdb as createdb_from_pdb
 from programs.Foldclass.dbsearch import run_dbsearch as dbsearch
-from programs.Foldclass.dbsearch_fulllength import full_length_search
+from programs.Foldclass.dbsearch_fulllength import multi_domain_search
 from programs.utils import (
     parse_output_format, 
     write_search_results, 
@@ -163,10 +163,10 @@ def search(args):
     if os.path.exists(all_search_output):
         logging.warning(f"Search output file '{all_search_output}' already exists. Results will be overwritten!")
 
-    if args.full_length_search:
-        full_length_search_output = args.output + '_all_dom_search.tsv'
-        if os.path.exists(full_length_search_output):
-            logging.warning(f"All-domain search output file '{full_length_search_output}' already exists. Results will be overwritten!")
+    if args.multi_domain_search:
+        multi_domain_search_output = args.output + '_multi_dom_search.tsv'
+        if os.path.exists(multi_domain_search_output):
+            logging.warning(f"Multi-domain search output file '{multi_domain_search_output}' already exists. Results will be overwritten!")
     
     output_fields = parse_output_format(
         format_str=args.format, 
@@ -190,15 +190,15 @@ def search(args):
         pdb_chain=args.pdb_chain,
         search_batchsize=args.search_batchsize,
         search_type=args.search_metric,
-        skip_tmalign=False #args.full_length_search
+        skip_tmalign=False #args.multi_domain_search
     )
     write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
     if args.report_insignificant_hits:
         write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers,metadata_json=args.metadata_json)
     
-    if args.full_length_search:
+    if args.multi_domain_search:
         # call full-length search routine
-        fl_search_results = full_length_search(
+        fl_search_results = multi_domain_search(
             queries=args.input,
             search_results = search_results,
             db_name=args.db_name,
@@ -208,10 +208,10 @@ def search(args):
             threads=args.threads,
             mintm=args.mintm,
             inputs_from_easy_search=True,
-            mode=args.full_length_mode
+            mode=args.multi_domain_mode
         )
         
-        write_all_dom_search_results(fl_search_results, full_length_search_output, args.output_headers)
+        write_all_dom_search_results(fl_search_results, multi_domain_search_output, args.output_headers)
         
     elapsed_time = time.time() - start_time
     logging.info(f'Finished search in {elapsed_time} seconds.')
@@ -307,10 +307,10 @@ def easy_search(args):
     if os.path.exists(all_search_output):
         logging.warning(f"Search output file '{all_search_output}' already exists. Results will be overwritten!")
 
-    if args.full_length_search:
-        full_length_search_output = args.output + '_all_dom_search.tsv'
-        if os.path.exists(full_length_search_output):
-            logging.warning(f"All-domain search output file '{full_length_search_output}' already exists. Results will be overwritten!")
+    if args.multi_domain_search:
+        multi_domain_search_output = args.output + '_multi_dom_search.tsv'
+        if os.path.exists(multi_domain_search_output):
+            logging.warning(f"Multi-domain search output file '{multi_domain_search_output}' already exists. Results will be overwritten!")
 
     output_fields = parse_output_format(
         format_str=args.format, 
@@ -370,15 +370,15 @@ def easy_search(args):
         pdb_chain=pdb_chains_for_search,
         search_batchsize=args.search_batchsize,
         search_type=args.search_metric,
-        skip_tmalign=False #args.full_length_search
+        skip_tmalign=False #args.multi_domain_search
     )
 
     write_search_results(results=search_results, output_file=search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)
     if args.report_insignificant_hits:
         write_search_results(results=all_search_results, output_file=all_search_output, format_list=output_fields, header=args.output_headers, metadata_json=args.metadata_json)    
     
-    if args.full_length_search:    
-        fl_search_results = full_length_search(
+    if args.multi_domain_search:    
+        fl_search_results = multi_domain_search(
             queries=segment_domains,
             search_results = search_results,
             db_name=args.db_name,
@@ -388,11 +388,11 @@ def easy_search(args):
             threads=args.threads,
             mintm=args.mintm,
             inputs_from_easy_search=True,
-            mode=args.full_length_mode,
+            mode=args.multi_domain_mode,
             pdb_chain=None
         )
         
-        write_all_dom_search_results(fl_search_results, full_length_search_output, args.output_headers)
+        write_all_dom_search_results(fl_search_results, multi_domain_search_output, args.output_headers)
     elapsed_time = time.time() - start_time
     logging.info(f'Finished easy-search in {elapsed_time:.3f} seconds.')
     shutil.rmtree(args.tmp)
