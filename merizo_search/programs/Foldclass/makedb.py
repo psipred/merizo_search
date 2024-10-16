@@ -68,6 +68,10 @@ def run_createdb(pdb_files: str, out_db: str, device: str) -> None:
         ca_coords_t = np.array(coords, dtype=np.float32)[:2000]
         seq_t = ''.join(seq[:2000])
 
+        if len(ca_coords_t) == 0 or len(seq_t) == 0:
+            logging.warning('No CA atoms read from PDB file '+pdb+'; skipping.')
+            continue
+
         inputs = torch.from_numpy(ca_coords_t).unsqueeze(0).to(device)
 
         with torch.no_grad():

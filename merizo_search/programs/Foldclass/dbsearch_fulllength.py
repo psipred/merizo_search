@@ -2,6 +2,7 @@
 
 import os
 import sys
+import shutil
 import logging
 import re
 import mmap
@@ -150,7 +151,7 @@ def tmalign_submatrix_to_hits(mtx: np.array, qc:str, hc:str, qds: list[str], hds
 def multi_domain_search(queries:list, # if list[str], treat as filenames, if list[dict], each dict has at least 'coords', 'seq', 'name'
                        search_results,
                        db_name,
-                       tmp: str,
+                       tmp_root: str,
                        device: torch.device,
                     #    topk: int=1,
                        fastmode: bool=False, 
@@ -194,9 +195,6 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
             query_dicts.append(read_pdb(pdbfile=queries[i], pdb_chain=pdb_chains[i]))
             
         queries = query_dicts
-
-    tmp = os.path.join(tmp, 'MD_search_structures')
-    os.makedirs(tmp, exist_ok=True)
 
     # extract potential chains for multi-domain matching
     logger.info('Start multi-domain search...')
@@ -400,6 +398,10 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
     if mode == 'exhaustive_tmalign':
 
         for qc in initial_hit_index.keys():
+
+            tmp = os.path.join(tmp_root, 'MD_search_structures_'+qc)
+            os.makedirs(tmp, exist_ok=True)
+
             nqd = len(initial_hit_index[qc].keys()) # number of domains in current qc
             if target_db['faiss']:
                 extract_ids = []
@@ -472,7 +474,7 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
                                                         ncpu=threads, 
                                                         mintm=mintm, 
                                                         options='-fast' if fastmode else None, 
-                                                        keep_pdbs=True
+                                                        keep_pdbs=True # this is sent to individual TM-align runs; we delete the files after this step
                                                         )
             # serial version
             """
@@ -498,7 +500,7 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
             
             # logger.info(str(np.array_equal(tmscore_mtx, tmscore_mtx2)))
             """
-
+            shutil.rmtree(tmp)
             # find sets of column indices in tmscore_mtx corresponding to each hc
             hd_names = np.asarray([ x[0] for x in index_entries_to_align ])
             hc_per_hd = np.asarray([ domid2chainid_fn(x) for x in hd_names ])

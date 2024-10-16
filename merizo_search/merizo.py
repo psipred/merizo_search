@@ -95,7 +95,7 @@ def createdb(args):
     parser = argparse.ArgumentParser(description="Call the createdb function of Foldclass to embed a directory of pdb files into a Foldclass database.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('input_dir', type=str, help='Directory containing PDB files. Will read all .pdb files in this directory.')
-    parser.add_argument('out_db', type=str, help='Output prefix for the created Foldseek db.')
+    parser.add_argument('out_db', type=str, help='Output prefix for the created Foldclass db.')
     parser.add_argument('-d', '--device', type=str, default='cpu', required=False, help="Hardware to run on. Options: 'cpu', 'cuda', 'mps'.")
     args = parser.parse_args(args)
     
@@ -202,7 +202,7 @@ def search(args):
             queries=args.input,
             search_results = search_results,
             db_name=args.db_name,
-            tmp=args.tmp,
+            tmp_root=args.tmp,
             device=args.device,
             fastmode=args.fastmode, 
             threads=args.threads,
@@ -382,7 +382,7 @@ def easy_search(args):
             queries=segment_domains,
             search_results = search_results,
             db_name=args.db_name,
-            tmp=args.tmp,
+            tmp_root=args.tmp,
             device=args.device,
             fastmode=args.fastmode, 
             threads=args.threads,
