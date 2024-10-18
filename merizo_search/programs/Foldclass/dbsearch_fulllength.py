@@ -323,10 +323,12 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
             metadata = '{ }'
 
     final_mda_results = list()
+    qcs = list(initial_hit_index.keys())
 
-    for qc in initial_hit_index.keys():
+    for qc in qcs:
         if len(initial_hit_index[qc].keys()) < 2:
             logger.info("Skipping query chain "+qc+" as it has only one detected domain.")
+            del initial_hit_index[qc]
             continue
 
         logger.info("Build potential target list for query chain "+qc)
@@ -390,6 +392,7 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
         if len(db_indices_to_extract) == 0:
             logger.info("Query chain " + qc + ": all per-domain hits are single-domain entries in the database. Multi-domain search not possible for this chain.")
             logger.info("Maybe try increasing -k .")
+            del initial_hit_index[qc]
             continue
         
         db_indices_to_extract = list(set(db_indices_to_extract))
@@ -532,7 +535,7 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
                                                         )
                 if len(subresult) > 0:
                     final_mda_results.extend( subresult )
-            
+            logger.info("Finished multi-domain search for query chain "+qc+".")
         return final_mda_results                           
     # elif mode == "embscore": # bonus to scores mode
     #     # we have a list of hits (hc and hd) per qc and qd.
