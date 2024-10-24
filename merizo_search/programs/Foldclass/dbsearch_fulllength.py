@@ -199,21 +199,11 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
     # extract potential chains for multi-domain matching
     logger.info('Start multi-domain search...')
     all_query_domains = list() # merizo-given names for the query domains in dbsearch().
-    all_hit_domains = list()
-    all_hit_indices = list()
+
     qd_coords_seqs = dict()
     for qdd in queries:
         qd_coords_seqs[os.path.basename(qdd['name'])] = {"coords": qdd['coords'], "seq":qdd['seq'] }
-
-    # if the same chain id is found for all query domains, then that is a multi-domain hit. no further work needed.
-    # If there are no such ids (or user forces it), then we need to do extra work.
-
-    for hitdict in search_results:
-        all_query_domains.extend([ i['query'] for i in hitdict.values() ])        
-        all_hit_domains.extend([ i['target'] for i in hitdict.values() ])
-        all_hit_indices.extend([ int(i['dbindex']) for i in hitdict.values() ])
-    
-    assert len(all_query_domains) == len(all_hit_domains) == len(all_hit_indices) 
+        all_query_domains.append(os.path.basename(qdd['name']).removesuffix(".pdb"))
 
     if inputs_from_easy_search:
         all_query_chains = [ re.sub("_merizo_[0-9]*$", "", x) for x in all_query_domains ]
@@ -221,38 +211,35 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
         # treat all query structures as single domains comaing from a single chain
         all_query_chains = [ 'A' for _ in all_query_domains ]
 
-
-    all_hit_chains = [ domid2chainid_fn(x) for x in all_hit_domains ]
-
-    #initial_hit_index = np.asarray(list(zip(all_query_chains, all_query_domains, all_hit_chains, all_hit_domains, all_hit_indices)))
-    initial_hit_index = dict()    # keys are QUERY CHAINS. Values: { 'query_domain1':[{hit_dict1}, {hit_dict2}, ...],
-                          #                                  'query_domain2':[{hit_dict1}, {hit_dict2}, ...]
-                          #                                }
+    initial_hit_index = dict()
     ihi_hit_chain_info = dict()   # ihi = initial hit index
-    for i in range(len(all_query_chains)):
-        qc = all_query_chains[i]
-        qd = all_query_domains[i]
-        hc = all_hit_chains[i]
-        hd = all_hit_domains[i]
-        hi = all_hit_indices[i]
-        
+
+    query_dom2chain_lookup = dict()
+    for qc,qd in zip(all_query_chains, all_query_domains):
         if qc not in initial_hit_index.keys():
-            initial_hit_index[qc] = dict()    
-            ihi_hit_chain_info[qc] = dict() # this will hold per-hit-chain information; for embscore mode
+            initial_hit_index[qc] = dict()
         if qd not in initial_hit_index[qc].keys():
             initial_hit_index[qc][qd] = dict()
-            # look up qd in queries to get coords and seq
-            initial_hit_index[qc][qd]['qcoords'] = qd_coords_seqs[qd]['coords']
-            initial_hit_index[qc][qd]['qseq'] = qd_coords_seqs[qd]['seq']
-            initial_hit_index[qc][qd]['hits'] = list() # this will hold per-hit-domain information
-            
-        initial_hit_index[qc][qd]['hits'].append({'hc': hc, 'hd': hd, 'hi': hi})
-    
+        
+        query_dom2chain_lookup[qd] = qc
+
+        initial_hit_index[qc][qd]['qcoords'] = qd_coords_seqs[qd]['coords']
+        initial_hit_index[qc][qd]['qseq'] = qd_coords_seqs[qd]['seq']
+        initial_hit_index[qc][qd]['hits'] = list() # this will hold per-hit-domain information
+
+    for hitdict in search_results:
+        for hit in hitdict.values():
+            qd = hit['query']
+            qc = query_dom2chain_lookup[qd]
+            hd = hit['target']
+            hc = domid2chainid_fn(hd)
+            hi = int(hit['dbindex'])
+            initial_hit_index[qc][qd]['hits'].append({'hc': hc, 'hd': hd, 'hi': hi})
+
     qcs = list(initial_hit_index.keys())
 
     for qc in qcs:
         # all results should be determined *per query chain*
-        # find hit chains common to all query domains for this query chain.
         num_query_domains = len(list(initial_hit_index[qc].keys()))
         
         if num_query_domains == 0:
@@ -282,7 +269,7 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
         """
                 
     target_db = read_database(db_name=db_name, device=device)
-        # construct db_indices_to_extract by checking db ids in the vicinity of the hit indices.
+    # construct db_indices_to_extract by checking db ids in the vicinity of the hit indices.
     all_db_indices_to_extract = dict()
 
     if target_db['faiss']:
@@ -333,13 +320,11 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
 
         logger.info("Build potential target list for query chain "+qc)
         db_indices_to_extract = []
-        nqc = len(initial_hit_index.keys()) # number of query chains in query set
         nqd = len(initial_hit_index[qc].keys()) # number of domains in current qc
         for qd in initial_hit_index[qc].keys():
             for hit in initial_hit_index[qc][qd]['hits']:
                 anchor_index = hit['hi']
                 anchor_chain = hit['hc'] # chain name we are looking for
-                anchor_domain = hit['hd'] # not sure we need this yet
                 
                 curr_idx_list = [] # indices to extract
                 db_entry_is_multidomain = False
@@ -377,7 +362,7 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
                 
                 nhd = len(curr_idx_list)
 
-                if nhd >= nqd : # don't bother if the hit chain is single-domain or has fewer domains than the query
+                if nhd >= nqd : # don't bother if the hit chain has fewer domains than the query
                     curr_idx_list.sort()
                     db_indices_to_extract.extend(curr_idx_list)
                     
@@ -390,8 +375,8 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
         # end for qd in hit_index[qc].keys()
         
         if len(db_indices_to_extract) == 0:
-            logger.info("Query chain " + qc + ": all per-domain hits are single-domain entries in the database. Multi-domain search not possible for this chain.")
-            logger.info("Maybe try increasing -k .")
+            logger.info("Query chain " + qc + ": Chains for all per-domain hits in the database have fewer domains than the query. Multi-domain search not possible for this chain.")
+            logger.info("Maybe try increasing -k, or use segmented domain structures as queries to `search` with `--multi_domain_search` enabled.")
             del initial_hit_index[qc]
             continue
         

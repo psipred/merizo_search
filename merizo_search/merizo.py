@@ -391,8 +391,8 @@ def easy_search(args):
             mode=args.multi_domain_mode,
             pdb_chain=None
         )
-        
-        write_all_dom_search_results(fl_search_results, multi_domain_search_output, args.output_headers)
+        if fl_search_results is not None:
+            write_all_dom_search_results(fl_search_results, multi_domain_search_output, args.output_headers)
     elapsed_time = time.time() - start_time
     logging.info(f'Finished easy-search in {elapsed_time:.3f} seconds.')
     shutil.rmtree(args.tmp)
