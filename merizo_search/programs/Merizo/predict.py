@@ -266,7 +266,8 @@ def run_merizo(input_paths: List[str], device: str = 'cpu', max_iterations: int 
     length_conditional_iterate: bool = False, iterate: bool = False, shuffle_indices: bool = False, 
     save_pdb: bool = False, save_domains: bool = False, save_fasta: bool = False, save_pdf: bool = False, 
     conf_filter: Optional[any] = None, plddt_filter: Optional[any] = None, min_domain_size: int = 50, min_fragment_size: int = 10,
-    domain_ave_size: int = 200, conf_threshold: float = 0.5, return_domains_as_list: bool=False, merizo_output: str=None, pdb_chain: str="A"
+    domain_ave_size: int = 200, conf_threshold: float = 0.5, return_domains_as_list: bool=False, merizo_output: str=None, pdb_chain: str="A",
+    threads: int = 0
 ) -> None:
     """
     Run the Merizo algorithm on input PDB paths.
@@ -291,6 +292,8 @@ def run_merizo(input_paths: List[str], device: str = 'cpu', max_iterations: int 
         logging.error("No inputs were provided!")
         sys.exit(1)
     
+    if threads > 0:
+        torch.set_num_threads(threads)
     device = get_device(device)
     network = Merizo().to(device)
 
@@ -387,6 +390,8 @@ if __name__ == "__main__":
     parser.add_argument("--domain_ave_size", dest="domain_ave_size", type=int, default=200, help="[For iteration mode] Controls the size threshold to be used for further iterations.")
     parser.add_argument("--conf_threshold", dest="conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
     parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
+    parser.add_argument('-t', '--threads', type=int, default=-1, required=False, help="Number of CPU threads to use.")
+    
     args = parser.parse_args()
     
     run_merizo(
@@ -409,4 +414,5 @@ if __name__ == "__main__":
         conf_threshold=args.conf_threshold,
         return_domains_as_list=False,
         pdb_chain=args.pdb_chain,
+        threads=args.threads,
     )

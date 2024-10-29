@@ -52,7 +52,8 @@ def segment(args):
     parser.add_argument("--conf_threshold", type=float, default=0.5, help="[For iteration mode] Controls the minimum confidence to accept for iteration move.")
     parser.add_argument("--pdb_chain", type=str, dest="pdb_chain", default="A", 
                         help="Select which PDB Chain you are analysing. Default is chain A for all input PDBs. You can provide a comma separated list if you can provide more than one input pdb.")
-
+    parser.add_argument('-t', '--threads', type=int, default=-1, required=False, help="Number of CPU threads to use.")
+    
     args = parser.parse_args(args)
     
     logging.info('Starting segment with command: \n\n{}\n'.format(
@@ -83,6 +84,7 @@ def segment(args):
         conf_threshold=args.conf_threshold,
         merizo_output=args.merizo_output,
         pdb_chain=args.pdb_chain,
+        threads=args.threads,
     )
     
     elapsed_time = time.time() - start_time
@@ -336,7 +338,8 @@ def easy_search(args):
         return_domains_as_list=True,
         conf_threshold=args.conf_threshold,
         merizo_output=args.merizo_output,
-        pdb_chain=args.pdb_chain
+        pdb_chain=args.pdb_chain,
+        threads=args.threads
     )
     
     write_segment_results(results=segment_results, output_file=segment_output, header=args.output_headers)
