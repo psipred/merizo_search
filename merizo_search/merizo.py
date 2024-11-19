@@ -4,6 +4,7 @@ import os
 import shutil
 import logging
 import time
+import uuid
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(SCRIPTDIR, 'programs'))
@@ -19,6 +20,11 @@ from programs.utils import (
     write_all_dom_search_results,
     check_for_database
 )
+
+def munge_tmp_with_uuid(path: str) -> str:
+    # make a uuid to be appended to tmp path name
+    uuid_suffix = uuid.uuid4() 
+    return path.rstrip('/')+uuid_suffix.hex
 
 def setup_logging():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -150,7 +156,7 @@ def search(args):
                          #Run pairwise TM-align for each query domain and potential hit domain. If all query domains can be aligned (tm> --mintm) to domains in the hit, it is a full-length hit.")
 
     args = parser.parse_args(args)
-    
+    tmp = munge_tmp_with_uuid(args.tmp)
     logging.info('Starting search with command: \n\n{}\n'.format(
         " ".join([f'"{arg}"' if " " in arg else arg for arg in sys.argv])
     ))
@@ -180,7 +186,7 @@ def search(args):
     search_results, all_search_results = dbsearch(
         inputs=args.input,
         db_name=args.db_name,
-        tmp=args.tmp,
+        tmp=tmp,
         device=args.device,
         topk=args.topk, 
         fastmode=args.fastmode, 
@@ -204,7 +210,7 @@ def search(args):
             queries=args.input,
             search_results = search_results,
             db_name=args.db_name,
-            tmp_root=args.tmp,
+            tmp_root=tmp,
             device=args.device,
             fastmode=args.fastmode, 
             threads=args.threads,
@@ -217,7 +223,7 @@ def search(args):
         
     elapsed_time = time.time() - start_time
     logging.info(f'Finished search in {elapsed_time} seconds.')
-    shutil.rmtree(args.tmp)
+    shutil.rmtree(tmp)
 
 # Function to handle easy-search mode
 def easy_search(args):
@@ -280,7 +286,7 @@ def easy_search(args):
                         help="Select which PDB Chain you are analysing. Defaut is chain A. You can provide a comma separated list if you can provide more than one input pdb")
     
     args = parser.parse_args(args)
-    
+    tmp = munge_tmp_with_uuid(args.tmp)
     logging.info('Starting easy-search with command: \n\n{}\n'.format(
         " ".join([f'"{arg}"' if " " in arg else arg for arg in sys.argv])
     ))
@@ -361,7 +367,7 @@ def easy_search(args):
     search_results, all_search_results = dbsearch(
         inputs=segment_domains,
         db_name=args.db_name,
-        tmp=args.tmp,
+        tmp=tmp,
         device=args.device,
         topk=args.topk, 
         fastmode=args.fastmode, 
@@ -385,7 +391,7 @@ def easy_search(args):
             queries=segment_domains,
             search_results = search_results,
             db_name=args.db_name,
-            tmp_root=args.tmp,
+            tmp_root=tmp,
             device=args.device,
             fastmode=args.fastmode, 
             threads=args.threads,
@@ -398,7 +404,7 @@ def easy_search(args):
             write_all_dom_search_results(fl_search_results, multi_domain_search_output, args.output_headers)
     elapsed_time = time.time() - start_time
     logging.info(f'Finished easy-search in {elapsed_time:.3f} seconds.')
-    shutil.rmtree(args.tmp)
+    shutil.rmtree(tmp)
 
 
 # Main function to parse arguments and call respective functions
