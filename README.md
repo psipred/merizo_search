@@ -17,6 +17,11 @@ For the CPU-only version of Faiss, replace the last step with `conda install fai
 
 We recommend using conda as there is no official Faiss package on PyPI the time of writing. Unofficial packages are available; use these at your own risk.
 
+
+## Databases
+We provide pre-built Foldclass databases for domains in CATH 4.3 and all 365 million+ domains from TED. They can be obtained from [here](https://doi.org/10.5522/04/26348605). We recommend using our convenience script in this repository (`download_dbs.sh`) to download them.
+
+
 ## Usage
 
 Merizo-search supports the functionalities listed below:
@@ -26,10 +31,6 @@ search          Runs Foldclass search on a single input PDB against a Foldclass 
 easy-search     Runs Merizo to segment a query into domains and then searches against a Foldclass database.
 createdb        Creates a Foldclass database given a directory of PDB files. 
 ```
-
-## Databases
-We provide pre-built Foldclass databases for domains in CATH 4.3 and all 365 million+ domains from TED. They can be downloaded [here](https://doi.org/10.5522/04/26348605). We recommend using our convenience script in this repository (`download_dbs.sh`) to download them.
-
 ### `segment`
 
 The `segment` module of Merizo can be used to segment a multidomain protein into domains and can be run using: 
