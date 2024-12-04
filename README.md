@@ -19,7 +19,7 @@ We recommend using conda as there is no official Faiss package on PyPI the time 
 
 
 ## Databases
-We provide pre-built Foldclass databases for domains in CATH 4.3 and all 365 million+ domains from TED. They can be obtained from [here](https://doi.org/10.5522/04/26348605). We recommend using our convenience script in this repository (`download_dbs.sh`) to download them.
+We provide pre-built Foldclass databases for domains in CATH 4.3 and all 365 million domains from TED. They can be obtained from [here](https://doi.org/10.5522/04/26348605). We recommend using our convenience script in this repository (`download_dbs.sh`) to download them.
 
 
 ## Usage
