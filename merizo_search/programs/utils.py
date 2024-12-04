@@ -63,7 +63,7 @@ def write_search_results(results: list[dict], output_file: str, format_list: str
                 elif option == 'target':
                     head_str+='target\t'
                 elif option == 'chopping':
-                    head_str+='dom_str\t'
+                    head_str+='chopping\t'
                 elif option == 'conf':
                     head_str+='dom_conf\t'
                 elif option == 'plddt':

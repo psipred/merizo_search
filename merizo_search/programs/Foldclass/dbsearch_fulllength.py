@@ -422,7 +422,7 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
                     for start, end in startend:
                         metadata.append(retrieve_bytes(start, end, mm=mdmm, typeconv=lambda x: x.decode('ascii')))
                 else:
-                    metadata = repeat(metadata) # repeat('{ }')
+                    metadata = [metadata] * len(all_db_indices_to_extract[qc]) # repeat('{ }')
             
                 index_entries_to_align = list(zip(extract_ids, extract_coords, extract_seqs, all_db_indices_to_extract[qc], metadata)) # leaving it as a zip generator means we can only iterate over it once
             else: # not faiss db

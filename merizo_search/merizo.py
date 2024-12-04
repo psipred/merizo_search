@@ -24,7 +24,7 @@ from programs.utils import (
 def munge_tmp_with_uuid(path: str) -> str:
     # make a uuid to be appended to tmp path name
     uuid_suffix = uuid.uuid4() 
-    return path.rstrip('/')+uuid_suffix.hex
+    return path.rstrip('/')+'-'+uuid_suffix.hex
 
 def setup_logging():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
