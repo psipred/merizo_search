@@ -1,0 +1,7 @@
+- name: Install merizosearch
+  hosts: all
+  roles:
+    - merizosearch
+    # - dataset
+  vars_files:
+   - ./config_vars.yml

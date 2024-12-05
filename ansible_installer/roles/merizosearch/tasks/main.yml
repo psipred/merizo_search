@@ -1,0 +1,35 @@
+- name: Check merizo_search is present
+  stat: path=/opt/merizo_search
+  register: merizo_exist
+
+- name: Check out merizo_search from GIT
+  when: merizo_exist.stat.exists == False
+  git:
+    repo: https://github.com/psipred/merizo_search.git
+    dest: "{{ app_location }}/merizo_search"
+    clone: yes
+    force: yes
+
+- name: Initiate virtualenv
+  when: merizo_exist.stat.exists == False
+  pip: 
+    virtualenv: "{{ app_location }}/merizosearch_env" 
+    virtualenv_python: python{{ python_version }}
+    requirements: ""
+
+- name: Install requirements
+  when: merizo_exist.stat.exists == False
+  pip:
+    state: latest
+    virtualenv: "{{ app_location }}/merizosearch_env"
+    virtualenv_command: /bin/virtualenv
+    virtualenv_python: "{{ app_location }}/merizo_env/bin/python"
+    requirements: "{{ app_location }}/merizo_search/merizo_search/programs/Merizo/requirements.txt"
+
+- name: Install faiss
+  pip:
+    name: faiss-gpu
+    state: latest
+    virtualenv: "{{ app_location }}/merizosearch_env" 
+    virtualenv_python: python{{ python_version }}
+    virtualenv_command: /bin/virtualenv

@@ -2,7 +2,36 @@
 
 Merizo-search is a method that builds on the original Merizo (Lau et al., 2023) by combining state-of-the-art domain segmentation with fast embedding-based searching. Specifically, Merizo-search makes use of an EGNN-based method called Foldclass, which embeds a structure and its sequence into a fixed size 128-length vector. This vector is then searched against a pre-encoded library of domains, and the top-K matches in terms of cosine similarity are used for confirmatory TM-align runs to validate the search. Merizo-search also supports searching larger-than-memory databases of embeddings using the Faiss library.
 
-## Installation
+## Ansible Installation
+
+First ensure that ansible is installed on your system, then clone the github repo. 
+
+``` bash
+pip install ansible
+git clone https://github.com/psipred/merizo_search.git
+cd merizo_search/ansible_installer
+```
+
+Next edit the the config_vars.yml to reflect where you would like Merizo Search and its underlying data to be installed.
+
+You can now run ansible as per
+
+``` bash
+ansible-playbook -i hosts install.yml
+```
+
+You can edit the hosts file to install Merizo Search on one or more machines. This ansible installation creates a python virtualenv called merizosearch_env which the program needs to run. You can activate this with
+
+``` bash 
+source [app path]/merizosearch_env/bin/activate
+```
+
+If you're using a virtualenv to install Torch you may find you need to add the paths to virtualenv versions of cudnn/lib/ and nccl/lib/ to your LD_LIBRARY_PATH 
+
+BY DEFAULT we do not download the Merizo-search datasets as they are nearly 1TB in size. You can do this manually (see below) or open `install.yml` and uncomment the line `- dataset`
+
+
+## Manual Installation
 
 #### Using conda with GPU support (Recommended):
 

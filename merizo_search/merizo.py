@@ -172,7 +172,7 @@ def search(args):
         logging.warning(f"Search output file '{all_search_output}' already exists. Results will be overwritten!")
 
     if args.multi_domain_search:
-        multi_domain_search_output = args.output + '_multi_dom_search.tsv'
+        multi_domain_search_output = args.output + '_search_multi_dom.tsv'
         if os.path.exists(multi_domain_search_output):
             logging.warning(f"Multi-domain search output file '{multi_domain_search_output}' already exists. Results will be overwritten!")
     
@@ -316,7 +316,7 @@ def easy_search(args):
         logging.warning(f"Search output file '{all_search_output}' already exists. Results will be overwritten!")
 
     if args.multi_domain_search:
-        multi_domain_search_output = args.output + '_multi_dom_search.tsv'
+        multi_domain_search_output = args.output + '_search_multi_dom.tsv'
         if os.path.exists(multi_domain_search_output):
             logging.warning(f"Multi-domain search output file '{multi_domain_search_output}' already exists. Results will be overwritten!")
 
