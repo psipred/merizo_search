@@ -1,6 +1,22 @@
 # Merizo-search
 
-Merizo-search is a method that builds on the original Merizo (Lau et al., 2023) by combining state-of-the-art domain segmentation with fast embedding-based searching. Specifically, Merizo-search makes use of an EGNN-based method called Foldclass, which embeds a structure and its sequence into a fixed size 128-length vector. This vector is then searched against a pre-encoded library of domains, and the top-K matches in terms of cosine similarity are used for confirmatory TM-align runs to validate the search. Merizo-search also supports searching larger-than-memory databases of embeddings using the Faiss library.
+Merizo-search is a method that builds on the original Merizo (Lau et al., 2023) by combining state-of-the-art domain segmentation with fast embedding-based searching. Specifically, Merizo-search makes use of an EGNN-based method called Foldclass, which embeds a structure and its sequence into a fixed size 128-length vector. This vector is then searched against a pre-encoded library of domains, and the top-_k_ matches in terms of cosine similarity are used for confirmatory TM-align runs to validate the search. Merizo-search also supports searching larger-than-memory databases of embeddings using the Faiss library.
+
+## Installation
+
+#### Using conda with GPU support (Recommended):
+
+```
+cd /path/to/merizo_search
+conda create -n merizo_search python=3.9
+conda activate merizo_search
+pip install -r merizo_search/programs/Merizo/requirements.txt
+conda install -c pytorch -c nvidia faiss-gpu
+```
+For the CPU-only version of Faiss, replace the last step with `conda install faiss-cpu`. A GPU provides only minor speedups for searching with Faiss, but is beneficial when segmenting and/or embedding many structures.
+
+We recommend using conda as there is no official Faiss package on PyPI the time of writing. Unofficial packages are available; use these at your own risk.
+
 
 ## Ansible Installation
 
@@ -28,32 +44,34 @@ source [app path]/merizosearch_env/bin/activate
 
 If you're using a virtualenv to install Torch you may find you need to add the paths to virtualenv versions of cudnn/lib/ and nccl/lib/ to your LD_LIBRARY_PATH 
 
-BY DEFAULT we do not download the Merizo-search datasets as they are nearly 1TB in size. You can do this manually (see below) or open `install.yml` and uncomment the line `- dataset`
-
-
-## Manual Installation
-
-#### Using conda with GPU support (Recommended):
-
-```
-cd /path/to/merizo_search
-conda create -n merizo_search python=3.9
-conda activate merizo_search
-pip install -r merizo_search/programs/Merizo/requirements.txt
-conda install -c pytorch -c nvidia faiss-gpu
-```
-For the CPU-only version of Faiss, replace the last step with `conda install faiss-cpu`. A GPU provides only minor speedups for searching with Faiss, but is beneficial when segmenting and/or embedding many structures.
-
-We recommend using conda as there is no official Faiss package on PyPI the time of writing. Unofficial packages are available; use these at your own risk.
+BY DEFAULT we do not download the Merizo-search databases as they are nearly 1TB in size. You can do this manually (see below) or open `install.yml` and uncomment the line `- dataset`
 
 
 ## Databases
-We provide pre-built Foldclass databases for domains in CATH 4.3 and all 365 million domains from TED. They can be obtained from [here](https://doi.org/10.5522/04/26348605). We recommend using our convenience script in this repository (`download_dbs.sh`) to download them.
+We provide pre-built Foldclass databases for domains in CATH 4.3 and all 365 million domains from TED. They can be obtained from [here](https://doi.org/10.5522/04/26348605). We recommend using our convenience script in this repository (`download_dbs.sh`) to download them. If using the URL above, please make sure you download the individual files in each directory, rather than download each directory as a whole.
 
+### Metadata format
+Our pre-built databases (including the ones in the `example/` directory in this repo) include metadata for each domain in the database. Metadata is organised in JSON key-value format, and the exact fields in the db are allowed to vary. For the CATH databases, we currently include the CATH assignment numbers up to H-level, and the resolution of the structure, where applicable. For the TED databases, we supply a subset of the fields available in the master TSV file. Here is an example, reformatted over multiple lines for clarity and annotated:
+```
+{
+  'ted': 'AF-Q9UKA2-F1-model_v4_TED01',  # TED consensus domain ID.
+  'cnsl': 'high',                        # TED consensus level; this is either 'high' or 'medium'.
+  'rr': '50-229',                        # TED consensus residue range in the AFDB model, sometimes called the 'chopping'.
+  'plddt': '93.735',                     # Average plDDT of the domain residues.
+  'cath': '2.60.120.260',                # Putative CATH label. This is in formatted as C.A.T.H, or C.A.T, or '-' where a label could not be assigned.
+  'cl': 'H',                             # The level in the CATH hierarchy up to which the label was assigned. This is either 'H', 'T', or '-'.
+  'cm': 'foldseek',                      # The method used to assign the CATH label. This is either 'foldseek', 'foldclass', or '-'.
+  'dens': '11.6',                        # The packing density for this domain.
+  'rg': '0.297',                         # The radius of gyration for the domain.
+  'taxid': '9606',                       # The NCBI TaxID associated with this protein.
+  'taxsci': 'Homo_sapiens'               # The short taxonomic name for the TaxID.
+}
+```
+We will soon release scripts that will allow you to add JSON-formatted metadata to a custom database created by the `createdb` module (see below).
 
 ## Usage
 
-Merizo-search supports the functionalities listed below:
+Merizo-search supports the functionalities listed below. The `-h` flag can be used to show all options for each mode :
 ```
 segment         Runs standard Merizo segment on a multidomain target.
 search          Runs Foldclass search on a single input PDB against a Foldclass database.
@@ -70,7 +88,7 @@ python merizo.py segment <input.pdb> <output_prefix> <options>
 python merizo.py segment ../examples/*.pdb results --iterate
 ```
 
-The `-h` flag can be used to show all options for `segment`. The input PDB can be a single PDB, or multiple, including something like `/dir/*.pdb`. The `output_prefix` will be appended with `_segment.tsv` to indicate the results of `segment`. 
+The input PDB can be a single PDB, or multiple, including something like `/dir/*.pdb`. The `output_prefix` will be appended with `_segment.tsv` to indicate the results of `segment`. 
 
 The `--iterate` option can sometimes be used to generate a better segmentation result on longer models, e.g. AlphaFold models.
 
@@ -96,7 +114,7 @@ M0      31      0       31      0       0.0000  0.0225
 
 ### `search`
 
-The `search` module of Merizo will call Foldclass to search queries (as they are, without segment) against a pre-compiled database (created using `createdb`). This is useful when queries are already domains. 
+The `search` module of Merizo-search will call Foldclass to search queries (as they are, without `segment`) against a pre-compiled database (created using `createdb`). This is useful when queries are already domains. 
 
 The `search` module is called using:
 ```
@@ -128,7 +146,7 @@ Output fields are configurable using the `--format` flag which allows the sectio
 python merizo.py search <input.pdb> <database_name> <output_prefix> <tmp> <options>
 
 # Example:
-python merizo.py easy-search ../examples/AF-Q96HM7-F1-model_v4.pdb ../examples/database/cath results tmp --iterate
+python merizo.py easy-search ../examples/AF-Q96HM7-F1-model_v4.pdb ../examples/database/cath results tmp --iterate 
 ```
 
 As with `search`, the `-h` option will print all options that can be given to the program. The `database_name` argument is the prefix of a Foldclass database, as above. A Foldclass database can be created using `createdb`. 
@@ -163,22 +181,40 @@ The `.pt` file is a Pytorch tensor containing the embedding representation of th
 The `.index` file contains the PDB names, CA coordinates and the sequences of the input PDBs.
 
 
-### Multi-domain searching
+## Multi-domain searching
 
-Both `search` and `easy-search` support searching for database entries that match all domains in a query. In the case of `search`, all supplied query structures are considered as originating from a single chain and searched against the database. In the case of `easy-search`, segmentation and multi-domain search operate on a per-query-chain basis, that is, only domains segmented from a single query chain are searched as a set.
+Both `search` and `easy-search` support searching for database entries that match all domains in a query chain. In the case of `search`, all supplied query structures are considered as domains originating from a single chain and searched against the database. In the case of `easy-search`, segmentation and multi-domain search operate on a per-query-chain basis, that is, only domains segmented from individual query chains are searched together as a set.
 
-To enable multi-domain searching, add the option `--multi_domain_search` to a `search` or `easy-search` command. A few important things to note:
+To enable multi-domain searching, add the option `--multi_domain_search` to a `search` or `easy-search` command. 
+
+A few important things to note:
 - In multi-domain searches, `-k` still controls the maximum number of per-domain hits retrieved using vector search. We recommend setting it to around 100.
-- We only keep hits where _all_ domains in each query chain are matched at least once in a hit chain. We don't return hits containing fewer domains than the query domain set. You can, however, manually supply a subset of pre-segmented domains to the `search` command.
-- The accuracy of multi-domain `easy-search` runs is dependent on the accuracy of the initial Merizo segmentation. If you're not getting many meaningful hits, we recommend checking the output from the implicit `segment` step from your run. You may wish to manually segment your query chain and then re-run multi-domain search using the `search` module. 
+- We only keep hits where _all_ domains in each query chain are matched at least once in a hit chain. We don't return hits containing fewer domains than the query domain set. You can, however, manually supply a subset of pre-segmented domains to the `search` command with `--multi_domain_search` enabled.
+- The accuracy of multi-domain `easy-search` runs is dependent on the accuracy of the initial Merizo segmentation. If you're not getting many meaningful hits, we recommend checking the output from the implicit `segment` step from your run. Merizo is fairly robust, but you may wish to manually segment your query chain and then re-run multi-domain search using the `search` module. 
+
+### Multi-domain search output
+When `--multi_domain_search` is supplied, multi-domain search results are output in a file with the suffix `_search_multi_dom.tsv`. Each line of this file describes a match between a query chain and a hit chain. This is different from the outputs from `search`, in which each line describes a domain-level match.
+
+The format of this file is not configurable (though headers can be enabled with the `--output_headers` option), and has the following format:
+
+```
+query_chain	nqd	hit_chain	nhd	match_category	match_info	hit_metadata
+3w5h	2	1amoA	4	1	3w5h_merizo_01:1amoA02:0.70881,3w5h_merizo_02:1amoA04:0.71	[{"cath": "2.40.30.10", "res": "2.600"},{"cath": "3.40.50.80", "res": "2.600"}]
+3w5h	2	1amoB	4	1	3w5h_merizo_01:1amoB02:0.70881,3w5h_merizo_02:1amoB04:0.71	[{"cath": "2.40.30.10", "res": "2.600"},{"cath": "3.40.50.80", "res": "2.600"}]
+3w5h	2	1b2rA	2	3	3w5h_merizo_01:1b2rA01:0.73567,3w5h_merizo_02:1b2rA02:0.70819	[{"cath": "2.40.30.10", "res": "1.800"},{"cath": "3.40.50.80", "res": "1.800"}]
+3w5h	2	1bjkA	2	3	3w5h_merizo_01:1bjkA01:0.7425,3w5h_merizo_02:1bjkA02:0.708	[{"cath": "2.40.30.10", "res": "2.300"},{"cath": "3.40.50.80", "res": "2.300"}]
+
+```
 
 Multi-domain hits are categorised into one of 4 categories in the `match_category` field of the output, representing the type of multi-domain match. Each can be seen as a subset of the last:
-```
-0 : Unordered domain match: all query domains present in hit chain, but in different sequential order to query chain
-1 : Discontiguous domain match: All query domains matched in sequential order, but hit chain may have extra domains in interstitial and/or end positions
-2 : Contiguous domain match: All query domains matched in sequential order. Hit chain may have extra domains at ends, but not in interstitial positions
-3 : Exact multi-domain architecture (MDA) match: query chain and hit chain correspond at domain level without domain rearrangement or indels
-```
+ `match_category` value | Category name | Meaning 
+ :---: | --- | --- 
+ 0 | Unordered domain match | All query domains present in hit chain, but in different sequential order to query chain. Domains may be inserted relative to the query chain at any position. 
+ 1 | Discontiguous domain match | All query domains matched in sequential order, but hit chain has at least one extra domain in an interstitial position. 
+ 2 | Contiguous domain match | All query domains matched in sequential order. Hit chain has extra domains at one or both ends, but not in interstitial positions. 
+ 3 | Exact multi-domain architecture (MDA) match | Query chain and hit chain correspond at domain level without domain rearrangement or insertions. 
+
+It is possible for the same hit chain to be listed more than once for the same query chain, as multiple query domain-hit domain mappings may be possible (e.g. in the case of repeats of domains). In such cases, Merizo-search will list all such pairings, one per line.
 
 ## Other outputs
 
