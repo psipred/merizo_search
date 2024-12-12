@@ -209,7 +209,7 @@ The columns are:
 
 Column name | Meaning
 :---: | ---
-`query_name` | The name of the query chain. In the case of `search` mode, all supplied domains are treated as coming from the same chain.
+`query_chain` | The name of the query chain. In the case of `search` mode, all supplied structures are treated as domains coming from the same chain.
 `nqd` | The number of domains in the query chain. In the case of `search` mode, this is the number of supplied domains.
 `hit_chain` | The name of the matched chain in the database.
 `nhd` | The total number of domains in the hit chain. This is always equal to or greater than `nqd`.
@@ -218,10 +218,10 @@ Column name | Meaning
 `match_metadata` | JSON array containing metadata for each hit domain, in the order that the hit domains appear in `match_info`.
 
 Multi-domain hits are categorised into one of 4 categories in the `match_category` field of the output, representing the type of multi-domain match. Each can be seen as a subset of the last:
- `match_category` value | Category name | Meaning 
+ `match_category` | Category name | Meaning 
  :---: | --- | --- 
  0 | Unordered domain match | All query domains present in hit chain, but in different sequential order to query chain. Domains may be inserted relative to the query chain at any position. 
- 1 | Discontiguous domain match | All query domains matched in sequential order, but hit chain has at least one extra domain in an interstitial position. 
+ 1 | Discontiguous domain match | All query domains matched in sequential order, but hit chain has at least one extra domain in an interstitial position, and possibly at one or both ends. 
  2 | Contiguous domain match | All query domains matched in sequential order. Hit chain has extra domains at one or both ends, but not in interstitial positions. 
  3 | Exact multi-domain architecture (MDA) match | Query chain and hit chain correspond at domain level without domain rearrangement or insertions. 
 
