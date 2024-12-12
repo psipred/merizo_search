@@ -183,7 +183,7 @@ The `.index` file contains the PDB names, CA coordinates and the sequences of th
 
 ## Multi-domain searching
 
-Both `search` and `easy-search` support searching for database entries that match all domains in a query chain. In the case of `search`, all supplied query structures are considered as domains originating from a single chain and searched against the database. In the case of `easy-search`, segmentation and multi-domain search operate on a per-query-chain basis, that is, only domains segmented from individual query chains are searched together as a set.
+Both `search` and `easy-search` support searching for database entries that match all domains in a query chain. In the case of `search`, all supplied query structures are considered as domains originating from a single chain and searched against the database. In the case of `easy-search`, segmentation and multi-domain search operate on a per-query-chain basis, that is, only domains segmented from individual query chains are searched together at a time.
 
 To enable multi-domain searching, add the option `--multi_domain_search` to a `search` or `easy-search` command. 
 
@@ -205,6 +205,17 @@ query_chain	nqd	hit_chain	nhd	match_category	match_info	hit_metadata
 3w5h	2	1bjkA	2	3	3w5h_merizo_01:1bjkA01:0.7425,3w5h_merizo_02:1bjkA02:0.708	[{"cath": "2.40.30.10", "res": "2.300"},{"cath": "3.40.50.80", "res": "2.300"}]
 
 ```
+The columns are:
+
+Column name | Meaning
+:---: | ---
+`query_name` | The name of the query chain. In the case of `search` mode, all supplied domains are treated as coming from the same chain.
+`nqd` | The number of domains in the query chain. In the case of `search` mode, this is the number of supplied domains.
+`hit_chain` | The name of the matched chain in the database.
+`nhd` | The total number of domains in the hit chain. This is always equal to or greater than `nqd`.
+`match_category` | An integer from 0 to 3 indicating the type of match (see below).
+`match_info` | Domain correspondence info. A comma-separated list of length `nqd`, each element of which is formatted as `query_domain:hit_domain:tm_align_score`.
+`match_metadata` | JSON array containing metadata for each hit domain, in the order that the hit domains appear in `match_info`.
 
 Multi-domain hits are categorised into one of 4 categories in the `match_category` field of the output, representing the type of multi-domain match. Each can be seen as a subset of the last:
  `match_category` value | Category name | Meaning 
