@@ -381,6 +381,7 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
             continue
         
         db_indices_to_extract = list(set(db_indices_to_extract))
+        db_indices_to_extract.sort()
         all_db_indices_to_extract[qc] = db_indices_to_extract
 
     if mode == 'exhaustive_tmalign':
