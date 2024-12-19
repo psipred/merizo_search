@@ -15,10 +15,13 @@ conda install -c pytorch -c nvidia faiss-gpu
 ```
 For the CPU-only version of Faiss, replace the last step with `conda install faiss-cpu`. A GPU provides only minor speedups for searching with Faiss, but is beneficial when segmenting and/or embedding many structures.
 
-We recommend using conda as there is no official Faiss package on PyPI the time of writing. Unofficial packages are available; use these at your own risk.
+We recommend using conda as there is no official Faiss package on PyPI the time of writing. Unofficial packages are available; use these at your own risk (see Ansible Installation below).
 
 
 ## Ansible Installation
+
+> [!NOTE]
+> The Ansible installation uses `virtualenv` rather than `conda`, and therefore uses an unofficial, third-party-maintained Faiss package from PyPI. This installation method is provided for convenience and is at your own risk.
 
 First ensure that ansible is installed on your system, then clone the github repo. 
 
@@ -28,21 +31,21 @@ git clone https://github.com/psipred/merizo_search.git
 cd merizo_search/ansible_installer
 ```
 
-Next edit the the config_vars.yml to reflect where you would like Merizo Search and its underlying data to be installed.
+Next, edit `config_vars.yml` to reflect where you would like Merizo-search and its underlying data to be installed.
 
-You can now run ansible as per
+You can now run ansible using
 
 ``` bash
 ansible-playbook -i hosts install.yml
 ```
 
-You can edit the hosts file to install Merizo Search on one or more machines. This ansible installation creates a python virtualenv called merizosearch_env which the program needs to run. You can activate this with
+You can edit the hosts file to install Merizo-search on one or more machines. This ansible installation creates a python virtualenv called `merizosearch_env`, which the program needs to run. You can activate this with
 
 ``` bash 
 source [app path]/merizosearch_env/bin/activate
 ```
 
-If you're using a virtualenv to install Torch you may find you need to add the paths to virtualenv versions of cudnn/lib/ and nccl/lib/ to your LD_LIBRARY_PATH 
+If you're using a virtualenv to install Torch, you may find you need to add the paths to the virtualenv versions of `cudnn/lib/` and `nccl/lib/` to your `LD_LIBRARY_PATH`.
 
 BY DEFAULT we do not download the Merizo-search databases as they are nearly 1TB in size. You can do this manually (see below) or open `install.yml` and uncomment the line `- dataset`
 
