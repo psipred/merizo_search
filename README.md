@@ -261,4 +261,6 @@ By default, all output files will be saved alongside the original input query PD
 # Citing
 
 If you find Foldclass and/or Merizo-search useful, please site our pre-print:
-[Foldclass and Merizo-search: embedding-based deep learning tools for protein domain segmentation, fold recognition and comparison, _BiorXiv_ ]{https://doi.org/10.1101/2024.03.25.586696}
+
+Foldclass and Merizo-search: embedding-based deep learning tools for protein domain segmentation, fold recognition and comparison, _BiorXiv_
+https://doi.org/10.1101/2024.03.25.586696
