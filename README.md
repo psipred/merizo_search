@@ -23,7 +23,7 @@ We recommend using conda as there is no official Faiss package on PyPI the time 
 > [!NOTE]
 > The Ansible installation uses `virtualenv` rather than `conda`, and therefore uses an unofficial, third-party-maintained Faiss package from PyPI. This installation method is provided for convenience and is at your own risk.
 
-First ensure that ansible is installed on your system, then clone the github repo. 
+First ensure that Ansible is installed on your system, then clone this GitHub repo. 
 
 ``` bash
 pip install ansible
@@ -39,7 +39,7 @@ You can now run ansible using
 ansible-playbook -i hosts install.yml
 ```
 
-You can edit the hosts file to install Merizo-search on one or more machines. This ansible installation creates a python virtualenv called `merizosearch_env`, which the program needs to run. You can activate this with
+You can edit the `hosts` file to install Merizo-search on one or more machines. This ansible installation creates a python virtualenv called `merizosearch_env`, which the program needs to run. You can activate this with
 
 ``` bash 
 source [app path]/merizosearch_env/bin/activate
@@ -51,23 +51,37 @@ BY DEFAULT we do not download the Merizo-search databases as they are nearly 1TB
 
 
 ## Databases
-We provide pre-built Foldclass databases for domains in CATH 4.3 and all 365 million domains from TED. They can be obtained from [here](https://doi.org/10.5522/04/26348605). We recommend using our convenience script in this repository (`download_dbs.sh`) to download them. If using the URL above, please make sure you download the individual files in each directory, rather than download each directory as a whole.
+We provide pre-built Foldclass databases for domains in CATH 4.3 and all 365 million domains from TED. They can be obtained from [here](https://doi.org/10.5522/04/26348605). We recommend using our convenience script in this repository (`download_dbs.sh`) to download them. 
+If you are using a browser to access the URL above, please make sure you download the individual files in each directory, rather than download each directory as a whole.
 
 ### Metadata format
-Our pre-built databases (including the ones in the `example/` directory in this repo) include metadata for each domain in the database. Metadata is organised in JSON key-value format, and the exact fields in the db are allowed to vary. For the CATH databases, we currently include the CATH assignment numbers up to H-level, and the resolution of the structure, where applicable. For the TED databases, we supply a subset of the fields available in the master TSV file. Here is an example, reformatted over multiple lines for clarity and annotated:
+Our pre-built databases (including the ones in the `example/` directory in this repo) include metadata for each domain in the database. Metadata is organised in JSON key-value format, and the exact fields in the db are allowed to vary. 
+
+For the CATH database, we currently include the following fields (reformatted over multiple lines for clarity and annotated):
 ```
 {
-  'ted': 'AF-Q9UKA2-F1-model_v4_TED01',  # TED consensus domain ID.
-  'cnsl': 'high',                        # TED consensus level; this is either 'high' or 'medium'.
-  'rr': '50-229',                        # TED consensus residue range in the AFDB model, sometimes called the 'chopping'.
-  'plddt': '93.735',                     # Average plDDT of the domain residues.
-  'cath': '2.60.120.260',                # Putative CATH label. This is in formatted as C.A.T.H, or C.A.T, or '-' where a label could not be assigned.
-  'cl': 'H',                             # The level in the CATH hierarchy up to which the label was assigned. This is either 'H', 'T', or '-'.
-  'cm': 'foldseek',                      # The method used to assign the CATH label. This is either 'foldseek', 'foldclass', or '-'.
-  'dens': '11.6',                        # The packing density for this domain.
-  'rg': '0.297',                         # The radius of gyration for the domain.
-  'taxid': '9606',                       # The NCBI TaxID associated with this protein.
-  'taxsci': 'Homo_sapiens'               # The short taxonomic name for the TaxID.
+  "cath": "2.60.120.290",   # CATH assignment up to superfamily (H) level
+  "res": "3.100",           # Resolution of the PDB entry (where applicable; "NA" otherwise)
+  "rr": "4-124",            # Residue range in the PDB (SEQRES numbering)
+  "clen": "576"             # The length of the *chain* that this domain is from. Useful for producing domain architecture diagrams (we use this on the PSIPRED server).
+}
+```
+
+For the TED database, we supply a subset of the fields available in the master TSV file. Here is the metadata available for an exampled domain:
+```
+{
+  "ted": "AF-Q9UKA2-F1-model_v4_TED01",  # TED consensus domain ID.
+  "cnsl": "high",                        # TED consensus level; this is either "high" or "medium".
+  "rr": "50-229",                        # TED consensus residue range in the AFDB model, sometimes called the "chopping".
+  "plddt": "93.735",                     # Average plDDT of the domain residues.
+  "cath": "2.60.120.260",                # Putative CATH label. This is in formatted as C.A.T.H, or C.A.T, or "-" where a label could not be assigned.
+  "cl": "H",                             # The level in the CATH hierarchy up to which the label was assigned. This is either "H", "T", or "-".
+  "cm": "foldseek",                      # The method used to assign the CATH label. This is either "foldseek", "foldclass", or "-".
+  "dens": "11.6",                        # The packing density for this domain.
+  "rg": "0.297",                         # The radius of gyration for the domain.
+  "taxid": "9606",                       # The NCBI TaxID associated with this protein.
+  "taxsci": "Homo_sapiens",              # The short taxonomic name for the TaxID.
+  "clen": "621"                          # The length of the *chain* that this domain is from. Useful for producing domain architecture diagrams (we use this on the PSIPRED server). 
 }
 ```
 We will soon release scripts that will allow you to add JSON-formatted metadata to a custom database created by the `createdb` module (see below).
@@ -191,9 +205,10 @@ Both `search` and `easy-search` support searching for database entries that matc
 To enable multi-domain searching, add the option `--multi_domain_search` to a `search` or `easy-search` command. 
 
 A few important things to note:
-- In multi-domain searches, `-k` still controls the maximum number of per-domain hits retrieved using vector search. We recommend setting it to around 100.
+- In multi-domain searches, `-k` still controls the maximum number of per-domain hits retrieved using vector search. We recommend setting it to 100 or so.
 - We only keep hits where _all_ domains in each query chain are matched at least once in a hit chain. We don't return hits containing fewer domains than the query domain set. You can, however, manually supply a subset of pre-segmented domains to the `search` command with `--multi_domain_search` enabled.
 - The accuracy of multi-domain `easy-search` runs is dependent on the accuracy of the initial Merizo segmentation. If you're not getting many meaningful hits, we recommend checking the output from the implicit `segment` step from your run. Merizo is fairly robust, but you may wish to manually segment your query chain and then re-run multi-domain search using the `search` module. 
+- If any domains in the query or hit chains are discontinuous, you will need to carry out extra checks to verify the matches. In particular, do not rely solely on the value of the `match_category` field in the output.
 
 ### Multi-domain search output
 When `--multi_domain_search` is supplied, multi-domain search results are output in a file with the suffix `_search_multi_dom.tsv`. Each line of this file describes a match between a query chain and a hit chain. This is different from the outputs from `search`, in which each line describes a domain-level match.
@@ -229,6 +244,7 @@ Multi-domain hits are categorised into one of 4 categories in the `match_categor
  3 | Exact multi-domain architecture (MDA) match | Query chain and hit chain correspond at domain level without domain rearrangement or insertions. 
 
 It is possible for the same hit chain to be listed more than once for the same query chain, as multiple query domain-hit domain mappings may be possible (e.g. in the case of repeats of domains). In such cases, Merizo-search will list all such pairings, one per line.
+As stated above, if any domains in the query or hit chains are discontinuous, you will need to carry out extra checks to verify the matches. In particular, do not rely solely on the value of `match_category`, as it uses a fairly simple algorithm to assign the match category values.
 
 ## Other outputs
 
@@ -241,3 +257,8 @@ The `segment` module used in `segment` and `easy-search` produces a number of di
 ```
 
 By default, all output files will be saved alongside the original input query PDB, but they can be saved into a folder given by `--merizo_output`.
+
+# Citing
+
+If you find Foldclass and/or Merizo-search useful, please site our pre-print:
+[Foldclass and Merizo-search: embedding-based deep learning tools for protein domain segmentation, fold recognition and comparison, _BiorXiv_ ]{https://doi.org/10.1101/2024.03.25.586696}
