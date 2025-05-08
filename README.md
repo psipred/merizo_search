@@ -1,7 +1,6 @@
 # Merizo-search
 
-_Foldclass and Merizo-search: embedding-based deep learning tools for protein domain segmentation, fold recognition and comparison. BiorXiv_
-https://doi.org/10.1101/2024.03.25.586696
+_Foldclass and Merizo-search: Scalable structural similarity search for single- and multi-domain proteins using geometric learning. [Bioinformatics](https://doi.org/10.1093/bioinformatics/btaf277)_
 
 Merizo-search is a method that builds on the original Merizo (Lau et al., 2023) by combining state-of-the-art domain segmentation with fast embedding-based searching. Specifically, Merizo-search makes use of an EGNN-based method called Foldclass, which embeds a structure and its sequence into a fixed size 128-length vector. This vector is then searched against a pre-encoded library of domains, and the top-_k_ matches in terms of cosine similarity are used for confirmatory TM-align runs to validate the search. Merizo-search also supports searching larger-than-memory databases of embeddings using the Faiss library.
 
@@ -263,10 +262,10 @@ By default, all output files will be saved alongside the original input query PD
 
 # Citing
 
-If you find Foldclass and/or Merizo-search useful, please cite our pre-print:
+If you find Foldclass and/or Merizo-search useful, please cite our paper in _Bioinformatics_:
 
-> Foldclass and Merizo-search: embedding-based deep learning tools for protein domain segmentation, fold recognition and comparison, _BiorXiv_
-> https://doi.org/10.1101/2024.03.25.586696
+> _Foldclass and Merizo-search: Scalable structural similarity search for single- and multi-domain proteins using geometric learning. Bioinformatics
+> https://doi.org/10.1093/bioinformatics/btaf277_
 
 Merizo is described in the following article:
 
