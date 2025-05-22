@@ -30,8 +30,8 @@ if [ $dbname == 'ted' ]; then
     wget ${wget_options} -O ${output_dir}/ted_365M_ca.db  https://rdr.ucl.ac.uk/ndownloader/files/50817567
     wget ${wget_options} -O ${output_dir}/ted_365M_ca.index https://rdr.ucl.ac.uk/ndownloader/files/50813403
     wget ${wget_options} -O ${output_dir}/ted_365M.json https://rdr.ucl.ac.uk/ndownloader/files/50813226
-    wget ${wget_options} -O ${output_dir}/ted_365M_metadata.db https://rdr.ucl.ac.uk/ndownloader/files/50814024
-    wget ${wget_options} -O ${output_dir}/ted_365M_metadata.index https://rdr.ucl.ac.uk/ndownloader/files/50813400
+    wget ${wget_options} -O ${output_dir}/ted_365M_metadata.db https://rdr.ucl.ac.uk/ndownloader/files/51596447 # https://rdr.ucl.ac.uk/ndownloader/files/50814024
+    wget ${wget_options} -O ${output_dir}/ted_365M_metadata.index https://rdr.ucl.ac.uk/ndownloader/files/51596228 # https://rdr.ucl.ac.uk/ndownloader/files/50813400
     wget ${wget_options} -O ${output_dir}/ted_365M_raw_128d.index_names https://rdr.ucl.ac.uk/ndownloader/files/50813532
     wget ${wget_options} -O ${output_dir}/ted_365M_raw_128d_norm.db https://rdr.ucl.ac.uk/ndownloader/files/50814849 
     wget ${wget_options} -O ${output_dir}/ted_365M_seq.db https://rdr.ucl.ac.uk/ndownloader/files/50813850
@@ -40,8 +40,8 @@ if [ $dbname == 'ted' ]; then
 elif [ $dbname == 'cath' ]; then
     # CATH
     wget ${wget_options} -O ${output_dir}/cath-4.3-foldclassdb.index https://rdr.ucl.ac.uk/ndownloader/files/50846196
-    wget ${wget_options} -O ${output_dir}/cath-4.3-foldclassdb.metadata https://rdr.ucl.ac.uk/ndownloader/files/50846190
-    wget ${wget_options} -O ${output_dir}/cath-4.3-foldclassdb.metadata.index https://rdr.ucl.ac.uk/ndownloader/files/50846187
+    wget ${wget_options} -O ${output_dir}/cath-4.3-foldclassdb.metadata https://rdr.ucl.ac.uk/ndownloader/files/51596162 # https://rdr.ucl.ac.uk/ndownloader/files/50846190
+    wget ${wget_options} -O ${output_dir}/cath-4.3-foldclassdb.metadata.index https://rdr.ucl.ac.uk/ndownloader/files/51596159 # https://rdr.ucl.ac.uk/ndownloader/files/50846187
     wget ${wget_options} -O ${output_dir}/cath-4.3-foldclassdb.pt https://rdr.ucl.ac.uk/ndownloader/files/50846193
 else
     echo "Unrecognised db name '$dbname'; currently only 'ted' and 'cath' are supported." >&2

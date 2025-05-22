@@ -6,7 +6,7 @@ import shutil
 import logging
 import re
 import mmap
-from itertools import repeat, product
+from itertools import product
 from multiprocessing import Pool, cpu_count
 
 import numpy as np
@@ -40,6 +40,14 @@ def domid2chainid_fn(x):
 
 
 def run_tmalign2(args):
+    """Wrapper function for run_tmalign, for use with Pool.map().
+
+    Args:
+        args (iterable): Positional arguments to run_tmalign().
+
+    Returns:
+        (str): Output of run_tmalign().
+    """
     x, y, options, keep_pdbs = args
     return run_tmalign(x, y, options, keep_pdbs)
 
@@ -51,7 +59,19 @@ def parallel_fill_tmalign_array(qfnames:list[str],
                                 options:str=None, 
                                 keep_pdbs:bool=False
                                 ):
+    """Multi-thread TM-align runs to fill a pairwise query-target matrix of TM-align scores.
 
+    Args:
+        qfnames (list[str]): Query PDB filenames
+        tfnames (list[str]): Target PDB filename
+        ncpu (int, optional): Number of parallel processes. Defaults to -1.
+        mintm (float, optional): TM-align scores <= mintm are set to zero. Defaults to 0.5.
+        options (str, optional): options for TM-align. Defaults to None.
+        keep_pdbs (bool, optional): Whether to keep the PDB files after alignment. For this function it must be False. Defaults to False.
+
+    Returns:
+        np.array[float], shape:(qfnames, tfnames): Pairwise TM-align scores.
+    """
     nrow = len(qfnames)
     ncol = len(tfnames)
 
@@ -73,6 +93,18 @@ def parallel_fill_tmalign_array(qfnames:list[str],
 
 
 def tmalign_submatrix_to_hits(mtx: np.array, qc:str, hc:str, qds: list[str], hds: list[dict] ):
+    """Determine multi-domain query-target mappings from TM-align submatrix
+
+    Args:
+        mtx (np.array): TM-align submatrix corresponding to domains from one query chain, and one target chain.
+        qc (str): Query chain name.
+        hc (str): Hit/target chain name
+        qds (list[str]): Query domain names
+        hds (list[dict]): Hit/target domain names *and* info
+
+    Returns:
+        list[tuple]: A list of valid query-hit mappings and info for this pair of chains.
+    """
     result = list()
     nqd, nhd = mtx.shape
 
@@ -381,6 +413,7 @@ def multi_domain_search(queries:list, # if list[str], treat as filenames, if lis
             continue
         
         db_indices_to_extract = list(set(db_indices_to_extract))
+        db_indices_to_extract.sort()
         all_db_indices_to_extract[qc] = db_indices_to_extract
 
     if mode == 'exhaustive_tmalign':
